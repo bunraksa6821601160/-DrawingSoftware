@@ -26,18 +26,27 @@ public void setComponent(){
     // cp.add(drawingPanel,BorderLayout.CENTER);
     
     DrawingPanel drawingPanel = new DrawingPanel();
+    JScrollPane scrollPane = new JScrollPane(drawingPanel);
+
     drawingPanel.setPreferredSize(new Dimension(800, 600));
-    cp.add(drawingPanel, BorderLayout.CENTER);
+    cp.add(scrollPane, BorderLayout.CENTER);
 
 //ทำให้toolอยู่ตรงกลางทางซ้าย
     JPanel leftPanel = new JPanel(new GridBagLayout());
     Tools tools = new Tools();
     leftPanel.add(tools);
     cp.add(leftPanel, BorderLayout.WEST);
+
+//zoom
+    ZoomPanel zoomPanel = new ZoomPanel(drawingPanel);
+    cp.add(zoomPanel, BorderLayout.SOUTH);
     
 //Layers
+    JPanel rightPanel = new JPanel(new GridBagLayout());
     Layers layers = new Layers(drawingPanel);
-    cp.add(layers,BorderLayout.EAST);
+    rightPanel.add(layers);
+
+    cp.add(rightPanel, BorderLayout.EAST);
 }
     
 public void Finally(){
