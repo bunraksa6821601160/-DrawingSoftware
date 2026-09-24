@@ -1,0 +1,16 @@
+
+### สรุปไฟล์ทั้งหมดในโปรเจกต์ (9 ไฟล์ / 1 Class ต่อ 1 ไฟล์)
+
+| ชื่อไฟล์ | หน้าที่ / Class Type |
+| --- | --- |
+| **`DrawnShape.java`** | Data Model เก็บรายละเอียดรูปทรง, ข้อความ, สี, ขนาดเส้น |
+| **`Layer.java`** | Data Model เก็บชั้นการวาดภาพและสถานะ On/Off |
+| **`DrawingModel.java`** | State Controller หลักควบคุม Active Layer และ Undo/Redo |
+| **`PaintPanel.java`** | Canvas สำหรับวาดภาพ รับ Event เม้าส์ และเรนเดอร์ภาพ |
+| **`Layers.java`** | UI Panel ฝั่งขวา สำหรับจัดการเพิ่ม/ลบ/สลับเลเยอร์ |
+| **`ToolsPanel.java`** | UI Panel ฝั่งซ้าย สำหรับเลือกเครื่องมือ และ Sliders ปรับขนาด |
+| **`MenuPanel.java`** | UI Panel ด้านบน สำหรับเมนู File, Help, Undo/Redo |
+| **`ZoomPanel.java`** | UI Panel ด้านล่าง สำหรับย่อ-ขยายภาพ |
+| **`Gui.java`** | Main Frame รวมทุก Component และมี `main` method รันโปรแกรม |
+
+โปรแกรมชุดนี้สมบูรณ์ ครอบคลุมฟังก์ชันตามที่คุณกำหนดไว้ทั้งหมดและพร้อมคอมไพล์ใช้งานได้ทันทีครับ
