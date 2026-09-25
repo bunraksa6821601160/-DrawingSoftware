@@ -36,6 +36,7 @@ public class Layer {
     
         // คัดลอกภาพ Background Image (ถ้ามี)
         if (this.backgroundImage != null) {
+            //มันเขียนยาวเฉยๆ ไม่ต้องตกใจ มันวิธีเขียนโดยไม่ต้อง import
             java.awt.image.BufferedImage imgCopy = new java.awt.image.BufferedImage(
                 this.backgroundImage.getWidth(),
                 this.backgroundImage.getHeight(),

@@ -43,29 +43,49 @@ public class DrawnShape implements Serializable {
     public ShapeType getType() { return type; }
 
     public void draw(Graphics2D g2d) {
-        g2d.setColor(color);
-        g2d.setStroke(new BasicStroke(strokeWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-
-        if (type == ShapeType.TEXT && text != null) {
-            g2d.setFont(font);
-            g2d.drawString(text, textPosition.x, textPosition.y);
-        } else if ((type == ShapeType.PENCIL || type == ShapeType.ERASER) && points != null && points.size() > 1) {
-            for (int i = 0; i < points.size() - 1; i++) {
-                Point p1 = points.get(i);
-                Point p2 = points.get(i + 1);
-                g2d.drawLine(p1.x, p1.y, p2.x, p2.y);
+        if(type == ShapeType.ERASER){
+            // [แก้จุดที่ 1] สั่งให้ลบ Pixel ใน Buffer ให้โปร่งใส
+            g2d.setComposite(AlphaComposite.Clear);
+            g2d.setStroke(new BasicStroke(strokeWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        
+            if (points != null && points.size() > 1) {
+                for (int i = 0; i < points.size() - 1; i++) {
+                    Point p1 = points.get(i);
+                    Point p2 = points.get(i + 1);
+                    g2d.drawLine(p1.x, p1.y, p2.x, p2.y);
+                }
             }
-        } else if (shape != null) {
-            g2d.draw(shape);
+            // คืนค่าโหมดการวาดกลับเป็นปกติ
+            g2d.setComposite(AlphaComposite.SrcOver);
+        }else{
+            g2d.setColor(color);
+            g2d.setStroke(new BasicStroke(strokeWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+            if (type == ShapeType.TEXT && text != null) {
+                g2d.setFont(font);
+                g2d.drawString(text, textPosition.x, textPosition.y);
+            } else if (type == ShapeType.PENCIL && points != null && points.size() > 1) {
+                for (int i = 0; i < points.size() - 1; i++) {
+                    Point p1 = points.get(i);
+                    Point p2 = points.get(i + 1);
+                    g2d.drawLine(p1.x, p1.y, p2.x, p2.y);
+                }
+            } else if (shape != null) {
+                g2d.draw(shape);
+            }
         }
+        
     }
 
     public boolean contains(Point p) {
         if (type == ShapeType.TEXT && textPosition != null && text != null) {
             Rectangle bounds = new Rectangle(textPosition.x, textPosition.y - 15, text.length() * 10, 20);
+
+            // เรียกใช้ contains ของ java.awt.Rectangle (คนละตัวกัน)
             return bounds.contains(p);
         }
         if (shape != null) {
+            // เรียกใช้ contains ของ java.awt.Shape (คนละตัวกัน)
             return shape.contains(p);
         }
         return false;

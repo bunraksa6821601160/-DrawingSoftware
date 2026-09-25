@@ -13,3 +13,13 @@
 | **`ZoomPanel.java`** | UI Panel ด้านล่าง สำหรับย่อ-ขยายภาพ |
 | **`Gui.java`** | Main Frame รวมทุก Component และมี `main` method รันโปรแกรม |
 
+ลำดับการทำเข้าใจโค้ด
+1.Gui
+2.DrawnShape
+3.Layer
+4.DrawingModel
+5.PaintPanel
+6.ToolsPanel
+7.MenuPanel
+8.ZoomPanel
+9.Layers

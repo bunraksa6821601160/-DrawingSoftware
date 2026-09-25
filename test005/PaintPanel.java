@@ -3,10 +3,10 @@ import java.awt.event.*;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.*;
-import javax.swing.border.LineBorder;
 
 public class PaintPanel extends JPanel {
     private DrawingModel model;
@@ -14,16 +14,31 @@ public class PaintPanel extends JPanel {
     private Point currentPoint;
     private List<Point> freehandPoints = new ArrayList<>();
 
+    // 1. ขนาดกระดาษตั้งต้น (Base Canvas Size)
+    private static final int BASE_WIDTH = 1000;
+    private static final int BASE_HEIGHT = 780;
+
     public PaintPanel(DrawingModel model) {
         this.model = model;
-        setPreferredSize(new Dimension(1000, 800)); // ขนาด Canvas ตั้งต้น
-        setBackground(Color.WHITE);
-        setBorder(new LineBorder(Color.DARK_GRAY, 2)); // เพิ่มกรอบรอบ Canvas
+
+        // กำหนดสีพื้นหลังภายนอกกระดาษ (เช่น สีเทาอ่อน เพื่อให้เห็นขอบกระดาษชัดเจน)
+        setBackground(Color.LIGHT_GRAY); 
+        updateCanvasSize(); // อัปเดตขนาดเริ่มต้น
+
+        //setPreferredSize(new Dimension(1000, 780)); // ขนาด Canvas ตั้งต้น
+        //setBackground(Color.WHITE);
+        //setBorder(new LineBorder(Color.DARK_GRAY, 20)); // เพิ่มกรอบรอบ Canvas
 
         MouseAdapter mouseHandler = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
                 Point p = scalePoint(e.getPoint());
+
+                //เพิ่มมา
+                // ป้องกันไม่ให้จุดเริ่มต้นอยู่นอกกระดาษ
+                if (!isInsideCanvas(p)) return;
+
+
                 startPoint = p;
                 currentPoint = p;
 
@@ -47,7 +62,7 @@ public class PaintPanel extends JPanel {
 
                     if (targetText != null) {
                         int opt = JOptionPane.showConfirmDialog(PaintPanel.this, 
-                                "ต้องการลบข้อความนี้ใช่หรือไม่?", "ลบข้อความ", JOptionPane.YES_NO_OPTION);
+                                "Do you want to delete this message?", "Delete message", JOptionPane.YES_NO_OPTION);
                         if (opt == JOptionPane.YES_OPTION) {
                             model.saveStateForUndo();
                             activeLayer.removeShape(targetText);
@@ -55,7 +70,7 @@ public class PaintPanel extends JPanel {
                         }
                     } else {
                         // พิมพ์ข้อความใหม่
-                        String input = JOptionPane.showInputDialog(PaintPanel.this, "กรอกข้อความที่ต้องการพิมพ์:");
+                        String input = JOptionPane.showInputDialog(PaintPanel.this, "Please enter the text to print:");
                         if (input != null && !input.trim().isEmpty()) {
                             model.saveStateForUndo();
                             DrawnShape textShape = new DrawnShape(input, p, new Font("SansSerif", Font.PLAIN, 18), model.getCurrentColor());
@@ -69,6 +84,10 @@ public class PaintPanel extends JPanel {
             @Override
             public void mouseDragged(MouseEvent e) {
                 Point p = scalePoint(e.getPoint());
+                //เพิ่มมา
+                // หนีบพิกัดการลากให้อยู่ในขอบเขตกระดาษเสมอ
+                p = clampPoint(p);
+
                 currentPoint = p;
 
                 Layer activeLayer = model.getActiveLayer();
@@ -95,7 +114,7 @@ public class PaintPanel extends JPanel {
                 if (tool == DrawnShape.ShapeType.PENCIL) {
                     activeLayer.addShape(new DrawnShape(DrawnShape.ShapeType.PENCIL, freehandPoints, model.getCurrentColor(), model.getPencilSize()));
                 } else if (tool == DrawnShape.ShapeType.ERASER) {
-                    activeLayer.addShape(new DrawnShape(DrawnShape.ShapeType.ERASER, freehandPoints, getBackground(), model.getEraserSize()));
+                    activeLayer.addShape(new DrawnShape(DrawnShape.ShapeType.ERASER, freehandPoints, null, model.getEraserSize()));
                 } else if (tool == DrawnShape.ShapeType.LINE) {
                     activeLayer.addShape(new DrawnShape(DrawnShape.ShapeType.LINE, new Line2D.Float(startPoint, currentPoint), model.getCurrentColor(), model.getPencilSize()));
                 } else if (tool == DrawnShape.ShapeType.RECTANGLE) {
@@ -128,35 +147,103 @@ public class PaintPanel extends JPanel {
         return new Ellipse2D.Float(Math.min(p1.x, p2.x), Math.min(p1.y, p2.y), Math.abs(p1.x - p2.x), Math.abs(p1.y - p2.y));
     }
 
+    //เพิ่มมา
+    private boolean isInsideCanvas(Point p) {
+        return p.x >= 0 && p.x <= BASE_WIDTH && p.y >= 0 && p.y <= BASE_HEIGHT;
+    }
+
+    //เพิ่มมา
+    private Point clampPoint(Point p) {
+        int x = Math.max(0, Math.min(p.x, BASE_WIDTH));
+        int y = Math.max(0, Math.min(p.y, BASE_HEIGHT));
+        return new Point(x, y);
+    }
+
+    //เพิ่มมา
+    // 3. เมธอดสำหรับคำนวณขนาด PreferredSize ของ Panel ตามอัตราซูม
+    public void updateCanvasSize() {
+        double zoom = model.getZoomScale();
+        int newWidth = (int) (BASE_WIDTH * zoom);
+        int newHeight = (int) (BASE_HEIGHT * zoom);
+        
+        setPreferredSize(new Dimension(newWidth, newHeight));
+        revalidate(); // แจ้ง JScrollPane ให้ปรับ Scrollbar ใหม่
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g.create();
+
+        //เพิ่มมา
+        // 1. เคลียร์พื้นที่ทั้งหมดของ Panel ด้วยสีเทาอ่อนก่อน (แก้ปัญหาทิ้งคราบ/เส้นขาว)
+        g2d.setColor(Color.LIGHT_GRAY);
+        g2d.fillRect(0, 0, getWidth(), getHeight());
 
         // นำค่า Zoom Scale มาคำนวณการย่อ-ขยาย
         double zoom = model.getZoomScale();
         g2d.scale(zoom, zoom);
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // วาด Layer ทุกตัวตามลำดับถ้าสถานะเป็น visible (On)
+        //เพิ่มมา
+        // 4. วาดแผ่นกระดาษสีขาว (Canvas Paper) ตามขนาดตั้งต้น
+        g2d.setColor(Color.WHITE);
+        g2d.fillRect(0, 0, BASE_WIDTH, BASE_HEIGHT);
+
+        //เพิ่มมา
+        // ตัดขอบไม่ให้การวาดล้นออกจากกระดาษ
+        g2d.setClip(0, 0, BASE_WIDTH, BASE_HEIGHT);
+  
+        drawLayersAndPreview(g2d);
+        
+        g2d.dispose();
+    }
+
+    private void drawLayersAndPreview(Graphics2D g2d) {
+        // 1. วาดแต่ละ Layer ลงบน Buffer แยกต่างหาก
         for (Layer layer : model.getLayers()) {
             if (layer.isVisible()) {
+                // สร้าง Image ใสสำหรับเรนเดอร์เฉพาะ Layer นี้
+                BufferedImage layerBuffer = new BufferedImage(
+                    BASE_WIDTH, BASE_HEIGHT, BufferedImage.TYPE_INT_ARGB
+                );
+                Graphics2D gLayer = layerBuffer.createGraphics();
+                gLayer.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // หากมีรูปภาพพื้นหลังของ Layer
                 if (layer.getBackgroundImage() != null) {
-                    g2d.drawImage(layer.getBackgroundImage(), 0, 0, null);
+                    gLayer.drawImage(layer.getBackgroundImage(), 0, 0, null);
                 }
+
+                // วาด Shapes ทั้งหมดของ Layer นี้ (ยางลบจะลบเฉพาะ Pixel ใน layerBuffer นี้)
                 for (DrawnShape shape : layer.getShapes()) {
-                    shape.draw(g2d);
+                    shape.draw(gLayer);
                 }
+
+                // ถ้าเป็น Active Layer ที่กำลังลากยางลบอยู่ ให้วาด Preview ยางลบลงใน Layer นี้สดๆ
+                if (layer == model.getActiveLayer() && startPoint != null && currentPoint != null) {
+                    if (model.getCurrentTool() == DrawnShape.ShapeType.ERASER) {
+                        gLayer.setComposite(AlphaComposite.Clear);
+                        gLayer.setStroke(new BasicStroke(model.getEraserSize(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                        for (int i = 0; i < freehandPoints.size() - 1; i++) {
+                            Point p1 = freehandPoints.get(i);
+                            Point p2 = freehandPoints.get(i + 1);
+                            gLayer.drawLine(p1.x, p1.y, p2.x, p2.y);
+                        }
+                    }
+                }
+
+                gLayer.dispose();
+
+                // 2. นำ Layer ที่วาดเสร็จแล้ว (ซึ่งมีส่วนโปร่งใสจากการลบ) มาแปะลงบนผืนกระดาษหลัก
+                g2d.drawImage(layerBuffer, 0, 0, null);
             }
         }
 
-        // วาด Preview ขณะผู้ใช้ลากเม้าส์
-        if (startPoint != null && currentPoint != null) {
-            g2d.setColor(model.getCurrentTool() == DrawnShape.ShapeType.ERASER ? getBackground() : model.getCurrentColor());
-            g2d.setStroke(new BasicStroke(
-                model.getCurrentTool() == DrawnShape.ShapeType.ERASER ? model.getEraserSize() : model.getPencilSize(),
-                BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND
-            ));
+        // 3. วาด Preview สำหรับเครื่องมืออื่นๆที่ไม่ใช่ยางลบ (เช่น ดินสอ, สี่เหลี่ยม, วงกลม)
+        if (startPoint != null && currentPoint != null && model.getCurrentTool() != DrawnShape.ShapeType.ERASER) {
+            g2d.setColor(model.getCurrentColor());
+            g2d.setStroke(new BasicStroke(model.getPencilSize(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
             DrawnShape.ShapeType tool = model.getCurrentTool();
             if (tool == DrawnShape.ShapeType.LINE) {
@@ -165,7 +252,7 @@ public class PaintPanel extends JPanel {
                 g2d.draw(makeRectangle(startPoint, currentPoint));
             } else if (tool == DrawnShape.ShapeType.CIRCLE) {
                 g2d.draw(makeEllipse(startPoint, currentPoint));
-            } else if ((tool == DrawnShape.ShapeType.PENCIL || tool == DrawnShape.ShapeType.ERASER) && freehandPoints.size() > 1) {
+            } else if (tool == DrawnShape.ShapeType.PENCIL && freehandPoints.size() > 1) {
                 for (int i = 0; i < freehandPoints.size() - 1; i++) {
                     Point p1 = freehandPoints.get(i);
                     Point p2 = freehandPoints.get(i + 1);
@@ -173,7 +260,5 @@ public class PaintPanel extends JPanel {
                 }
             }
         }
-
-        g2d.dispose();
     }
 }

@@ -1,6 +1,6 @@
-import javax.swing.*;
 import java.awt.*;
 import java.util.List;
+import javax.swing.*;
 
 public class Layers extends JPanel {
     private DrawingModel model;
@@ -8,7 +8,8 @@ public class Layers extends JPanel {
     private JList<String> layerJList;
     private JButton toggleAllBtn;
 
-    public Layers(DrawingModel model) {
+    //Layers(DrawingModel model)//อันเก่า
+    public Layers(DrawingModel model, PaintPanel paintPanel) {
         this.model = model;
         setLayout(new BorderLayout(5, 5));
         setBorder(BorderFactory.createTitledBorder("Layers"));
@@ -46,16 +47,18 @@ public class Layers extends JPanel {
 
         deleteBtn.addActionListener(e -> {
             model.removeActiveLayer();
+            paintPanel.repaint();//เพิ่มมา
             updateLayerList();
         });
 
-        upBtn.addActionListener(e -> moveLayer(-1));
-        downBtn.addActionListener(e -> moveLayer(1));
+        upBtn.addActionListener(e -> {moveLayer(-1); paintPanel.repaint(); });
+        downBtn.addActionListener(e -> {moveLayer(1); paintPanel.repaint();});
 
         toggleSingleBtn.addActionListener(e -> {
             Layer active = model.getActiveLayer();
             if (active != null) {
                 active.setVisible(!active.isVisible());
+                paintPanel.repaint();//เพิ่มมา
                 updateLayerList();
             }
         });
@@ -74,6 +77,7 @@ public class Layers extends JPanel {
         toggleAllBtn.addActionListener(e -> {
             model.toggleGlobalVisibility();
             toggleAllBtn.setText(model.isGlobalVisible() ? "on" : "off");
+            paintPanel.repaint();//เพิ่มมา
             updateLayerList();
         });
 

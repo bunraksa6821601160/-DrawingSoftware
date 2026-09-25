@@ -1,18 +1,19 @@
-import javax.imageio.ImageIO;
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import javax.imageio.ImageIO;
+import javax.swing.*;
 
 public class MenuPanel extends JPanel {
     private DrawingModel model;
     private PaintPanel paintPanel;
     private File currentSaveFile;
 
-    public MenuPanel(DrawingModel model, PaintPanel paintPanel) {
+    //MenuPanel(DrawingModel model, PaintPanel paintPanel) ของเก่า
+    public MenuPanel(DrawingModel model, PaintPanel paintPanel, Layers layers) {
         this.model = model;
         this.paintPanel = paintPanel;
         setLayout(new FlowLayout(FlowLayout.LEFT));
@@ -37,7 +38,7 @@ public class MenuPanel extends JPanel {
 
         fileMenu.add(newItem);
         fileMenu.add(openItem);
-        fileMenu.addSeparator();
+        fileMenu.addSeparator();  //เพิ่มเส้นแบ่งแนวนอน (Menu Separator Line) แทรกระหว่างรายการเมนู
         fileMenu.add(saveItem);
         fileMenu.add(saveAsItem);
 
@@ -49,11 +50,11 @@ public class MenuPanel extends JPanel {
         aboutItem.addActionListener(e -> JOptionPane.showMessageDialog(this, 
                 "Java Swing Drawing Application\nVersion 1.0", "About", JOptionPane.INFORMATION_MESSAGE));
         howToItem.addActionListener(e -> JOptionPane.showMessageDialog(this, 
-                "วิธีใช้งานเบื้องต้น:\n" +
-                "1. เลือกเครื่องมือและขนาดจาก ToolsPanel\n" +
-                "2. วาดภาพบน PaintPanel ใน Active Layer ปัจจุบัน\n" +
-                "3. ลบข้อความได้โดยคลิกเครื่องมือ Text แล้วกดเลือกข้อความบน Canvas\n" +
-                "4. ใช้ Ctrl+Z เพื่อ Undo และ Ctrl+Y เพื่อ Redo", 
+                "Basic Usage:\n" +
+                "1. Select a tool and size from ToolsPanel\n" +
+                "2. Draw on PaintPanel within the current Active Layer\n" +
+                "3. Delete text by selecting the Text tool and clicking the text on the Canvas\n" +
+                "4. Use Ctrl+Z to Undo and Ctrl+Y to Redo", 
                 "How to use", JOptionPane.INFORMATION_MESSAGE));
 
         helpMenu.add(aboutItem);
@@ -72,6 +73,7 @@ public class MenuPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 model.undo();
+                layers.updateLayerList();//เพิ่มมา
                 paintPanel.repaint();
             }
         };
@@ -80,6 +82,7 @@ public class MenuPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 model.redo();
+                layers.updateLayerList();//เพิ่มมา
                 paintPanel.repaint();
             }
         };
@@ -117,7 +120,7 @@ public class MenuPanel extends JPanel {
                     paintPanel.repaint();
                 }
             } catch (IOException ex) {
-                JOptionPane.showMessageDialog(this, "ไม่สามารถเปิดไฟล์รูปภาพได้", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Failed to open image file.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -142,9 +145,9 @@ public class MenuPanel extends JPanel {
             paintPanel.paint(g2d);
             g2d.dispose();
             ImageIO.write(image, "PNG", currentSaveFile);
-            JOptionPane.showMessageDialog(this, "บันทึกไฟล์เรียบร้อยแล้ว", "Success", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "File saved successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
         } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this, "เกิดข้อผิดพลาดในการบันทึกไฟล์", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Failed to save file.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

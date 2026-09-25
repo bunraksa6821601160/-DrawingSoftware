@@ -1,0 +1,103 @@
+classDiagram
+    %% Model Classes
+    class DrawnShape {
+        +enum ShapeType
+        -ShapeType type
+        -List~Point~ points
+        -Point startPoint
+        -Point endPoint
+        -Color color
+        -float strokeWidth
+        -String text
+        +draw(Graphics2D g2d)
+    }
+
+    class Layer {
+        -String name
+        -boolean visible
+        -List~DrawnShape~ shapes
+        -BufferedImage backgroundImage
+        +cloneLayer() Layer
+    }
+
+    class DrawingModel {
+        -List~Layer~ layers
+        -int activeLayerIndex
+        -ShapeType currentTool
+        -Color currentColor
+        -float pencilSize
+        -float eraserSize
+        -double zoomScale
+        -boolean globalVisibility
+        -Stack~List~Layer~~ undoStack
+        -Stack~List~Layer~~ redoStack
+        +addLayer()
+        +removeActiveLayer()
+        +saveStateForUndo()
+        +undo()
+        +redo()
+        -cloneLayers(List~Layer~) List~Layer~
+    }
+
+    %% View / Controller UI Panels
+    class PaintPanel {
+        -DrawingModel model
+        -Point startPoint
+        -Point currentPoint
+        -DrawnShape currentDrawingShape
+        +paintComponent(Graphics g)
+    }
+
+    class Layers {
+        -DrawingModel model
+        -DefaultListModel listModel
+        -JList layerList
+    }
+
+    class ToolsPanel {
+        -DrawingModel model
+        -JButton colorPreviewBtn
+    }
+
+    class MenuPanel {
+        -DrawingModel model
+        -PaintPanel paintPanel
+        -File currentSaveFile
+        +openPNGImage()
+        +savePNGImage(boolean)
+    }
+
+    class ZoomPanel {
+        -DrawingModel model
+        -PaintPanel paintPanel
+        -JLabel zoomLabel
+    }
+
+    class Gui {
+        -DrawingModel model
+        -ToolsPanel toolsPanel
+        -MenuPanel menuPanel
+        -PaintPanel paintPanel
+        -ZoomPanel zoomPanel
+        -Layers layersPanel
+        +main(String[] args)
+    }
+
+    %% Relationships
+    Layer "1" *-- "*" DrawnShape : contains
+    DrawingModel "1" *-- "*" Layer : manages
+    DrawingModel ..> DrawnShape : uses ShapeType
+
+    PaintPanel --> DrawingModel : references & modifies
+    Layers --> DrawingModel : references & modifies
+    ToolsPanel --> DrawingModel : references & modifies
+    ZoomPanel --> DrawingModel : references
+    MenuPanel --> DrawingModel : references
+    MenuPanel --> PaintPanel : controls export/repaint
+
+    Gui *-- DrawingModel : owns
+    Gui *-- PaintPanel : contains
+    Gui *-- ToolsPanel : contains
+    Gui *-- MenuPanel : contains
+    Gui *-- ZoomPanel : contains
+    Gui *-- Layers : contains
