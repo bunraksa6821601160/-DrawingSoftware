@@ -66,7 +66,7 @@ public class Layers extends JPanel {
         renameBtn.addActionListener(e -> {
             Layer active = model.getActiveLayer();
             if (active != null) {
-                String newName = JOptionPane.showInputDialog(this, "ตั้งชื่อเลเยอร์ใหม่:", active.getName());
+                String newName = JOptionPane.showInputDialog(this, "Name the new layer:", active.getName());
                 if (newName != null && !newName.trim().isEmpty()) {
                     active.setName(newName.trim());
                     updateLayerList();
