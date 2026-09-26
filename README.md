@@ -1,173 +1,40 @@
-[คลาสไดอะแกรม.txt](https://github.com/user-attachments/files/32678337/default.txt)
-DrawShape{
-+ ShapeType : Enum
-- shape : Shape
-- points : List<Point>
-- test : String
-- textPosition : Point
-- color : Color
-- StrokeWidth : float
-- font : Font
+นายบุญรักษา ประดิษฐ์มณีโชติ 6821601160 ทำทุกอย่าง
+นายวงศธร เชื้อจีน 6821601381 หาข้อมูลและทำ Gui
+นายศิวโรจ ขำขัน 6821601470 เขียนโปรแกรม
 
-///
+--------------------------------
 
-+ DrawnShape(type : ShapeType, shape : Shape, color : Color, strokeWidth : float)
-+ DrawnShape(type : ShapeType, points : List<Point>, color : Color, strokeWidth : float)
-+ DrawnShape(text : String, pos : Point, font : Font, color : Color)
-+ getType() : ShapeType
-+ draw(g2d : Graphics2D) : void
-+ contains(p : Point) : boolean 
-}
+#ฟังก์ชันการทำงานของโปรแกรม
 
-Layer{
-- name : String
-- visible : Boolean
-- shapes : List<DrawnShape>
-- backgroundImage : BufferedImage
+ดินสอ ใช้วาดเส้น 
+ยางลบ ใช้ลบรูป
+วาดเส้นตรง
+วาดสี่เหลี่ยม
+วาดวงกลม
+วาดหรือพิมม์ข้อความ กดที่ข้อความเพื่อลบได้ด้วย 
+ปรับขนาด ทั้งยางลบและดินสอ
+เลือกสี
 
-///
+มีหน้าเมนู ได้แก่ File, help, Undo, Redo
+File โดยข้างในมี new, open, save, save as
+new สร้างหน้าต่างใหม่(สร้างอีก JFrame เลย)
+open เปิดไฟล์รูป png พร้อมวาดต่อ
+save บันทึกเป็น png
+save as เลือกที่ save แล้วบันทึกเป็น png
 
-+ Layer(name : String)
-+ getName : String
-+ setName(name : String) : void
-+ isVisible : Boolean
-+ setVisible(visible : boolean) : void
-+ getShapes() : List<DrawnShape>
-+ addShape(shape : DrawnShape) : void
-+ removeShape(shape : DrawnShape) : void
-+ getBackgroundImage() : BufferedImage
-+ setBackgroundImage(img : BufferedImage) : void
-+ cloneLayer() : Layer
-}
+help โดยข้างในมี about, How to use
+about ขึ้นหน้าต่างข้อความที่เกี่ยวกับ project 
+How to use ขึ้นหน้าต่างวิธีใช้
 
+Undo -> ทั้งสิ่งที่วาด และ เลเยอร์ และ มีคีย์ลัด ctrl Z
+Redo -> ทั้งสิ่งที่วาด และ เลเยอร์ และ มีคีย์ลัด ctrl y
 
-DrawingModel{
-- layers : List<Layer>
-- activeLayerIndex : int
-- currentTool : DrawnShape.ShapeType
-- currentColor : Color
-- pencilSize : float
-- eraserSize : float
-- zoomScale : double
-- globalVisibility : Boolean
-- undoStack : Stack<List<Layer>>
-- redoStack : Stack<List<Layer>>
+มีเลเยอร์ใช้โดย
+เลือกเลเยอร์ที่จะใช้ได้
+เลเยอร์เพิ่มได้เรื่อยๆ
+ลบเลเยอร์ได้
+เปลี่ยนตำแหน่งเลเยอร์ได้
+เปิด/ปิด การมองเห็นได้
+เปลี่ยนชื่อเลเยอร์ได้
 
-///
-
-+ public DrawingModel()
-+ getLayers() : List<Layer>
-+ getActiveLayer() : Layer
-+ getActiveLayerIndex() : int
-+ setActiveLayerIndex(index : int) : void
-+ addLayer() : void
-+ removeActiveLayer() : void
-+ toggleGlobalVisibility() : void
-+ getCurrentTool() : DrawnShape.ShapeType
-+ setCurrentTool(tool : DrawnShape.ShapeType) : void
-+ getCurrentColor() : Color
-+ setCurrentColor(color : Color) : void
-+ getPencilSize() : float
-+ setPencilSize(size : float) : void
-+ getEraserSize() : float
-+ setEraserSize(size : float) : void
-+ getZoomScale() : double
-+ setZoomScale(zoom : double) : void
-+ saveStateForUndo() : void
-+ undo() : void
-+ redo() : void
-+ cloneLayers(original : List<Layer>) : List<Layer>
-}
-
-
-PaintPanel{
-- model : DrawingModel model
-- startPoint : Point
-- currentPoint : Point
-- freehandPoints : List<Point>
-- BASE_WIDTH : int
-- BASE_HEIGHT : int
-
-///
-
-+ PaintPanel(model : DrawingModel)
-- scalePoint(p : Point) : Point
-- makeRectangle(p1 : Point, p2 : Point) : Rectangle2D.Float
-- makeEllipse(p1 : Point, p2 : Point) : Ellipse2D.Float
-- isInsideCanvas(p : Point) : Boolean
-- clampPoint(p : Point) : Point
-+ updateCanvasSize() : void
-+ paintComponent(g : Graphics) : void
-- drawLayerAndPreview(g2d : Graphics2D) : void
-}
-
-
-ToolsPanel{
-- model : DrawingModel
-- colorPreviewBtn : JButton
-
-///
-
-+ ToolsPanel(model : DrawingModel)
-}
-
-
-Layers{
-- model : DrawingModel
-- listModel : DefaultListModel<String>
-- layerJList : JList<String>
-- toggleAllBtn : JButton
-
-///
-
-+ Layers(model : DrawingModel, paintPanel : PaintPanel)
-- moveLayer(direction : int) : void
-+ updateLayerList() : void
-}
-
-
-
-MenuPanel{
-- model : DrawingModel
-- paintPanel : PaintPanel
-- currentSaveFile : File
-
-///
-
-+ MenuPanel(model : DrawingModel, paintPanel : PaintPanel, layers : Layers)
-- setupShortcuts(undoAction : Action, redoAction : Action) : void
-- openPNGImage() : void
-- savePNGImage(saveAs : boolean) : void
-}
-
-
-ZoomPanel{
-- model : DrawingModel
-- paintPanel : PaintPanel
-- zoomLabel : JLabel
-
-///
-
-+ ZoomPanel(model : DrawingModel, paintPanel : PaintPanel)
-}
-
-
-
-Gui{
-- model : DrawingModel
-- toolsPanel : ToolaPanel
-- menuPanel : MenuPanel
-- paintPanel : PaintPanel
-- zoomPanel : ZoomPanel
-- layersPanel : Layers
-
-///
-
-+ Gui()
-+ main(args : String[]) : void // เป็น static ต้องมีขีดเส้นใต้
-}
-
-
-
-
-
+มีระบบซูมเข้าซูมออก
