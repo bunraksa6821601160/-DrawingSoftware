@@ -97,7 +97,7 @@ PaintPanel{
 - isInsideCanvas(p : Point) : Boolean
 - clampPoint(p : Point) : Point
 + updateCanvasSize() : void
-# paintComponent(g : Graphics) : void
++ paintComponent(g : Graphics) : void
 - drawLayerAndPreview(g2d : Graphics2D) : void
 }
 
