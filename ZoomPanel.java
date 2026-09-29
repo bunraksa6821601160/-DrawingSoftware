@@ -2,13 +2,10 @@ import java.awt.*;
 import javax.swing.*;
 
 public class ZoomPanel extends JPanel {
-    private DrawingModel model;
-    private PaintPanel paintPanel;
     private JLabel zoomLabel;
 
     public ZoomPanel(DrawingModel model, PaintPanel paintPanel) {
-        this.model = model;
-        this.paintPanel = paintPanel;
+
         setLayout(new FlowLayout(FlowLayout.RIGHT));
         setBorder(BorderFactory.createEtchedBorder());
 

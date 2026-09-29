@@ -7,6 +7,7 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.*;
+import java.awt.geom.Path2D;
 
 public class PaintPanel extends JPanel {
     private DrawingModel model;
@@ -15,8 +16,8 @@ public class PaintPanel extends JPanel {
     private List<Point> freehandPoints = new ArrayList<>();
 
     // 1. ขนาดกระดาษตั้งต้น (Base Canvas Size)
-    private int BASE_WIDTH = 1000;
-    private int BASE_HEIGHT = 780;
+    private int BASE_WIDTH = 800;
+    private int BASE_HEIGHT = 600;
 
     public PaintPanel(DrawingModel model) {
         this.model = model;
@@ -38,7 +39,7 @@ public class PaintPanel extends JPanel {
                 // ป้องกันไม่ให้จุดเริ่มต้นอยู่นอกกระดาษ
                 if (!isInsideCanvas(p)) return;
 
-
+                p = clampPoint(p);
                 startPoint = p;
                 currentPoint = p;
 
@@ -74,6 +75,7 @@ public class PaintPanel extends JPanel {
                         if (input != null && !input.trim().isEmpty()) {
                             model.saveStateForUndo();
                             DrawnShape textShape = new DrawnShape(input, p, new Font("SansSerif", Font.PLAIN, 18), model.getCurrentColor());
+                            textShape.setOpacity(model.getOpacity());
                             activeLayer.addShape(textShape);
                             repaint();
                         }
@@ -96,13 +98,13 @@ public class PaintPanel extends JPanel {
                 DrawnShape.ShapeType tool = model.getCurrentTool();
                 if (tool == DrawnShape.ShapeType.PENCIL || tool == DrawnShape.ShapeType.ERASER) {
                     freehandPoints.add(p);
-                }
                 repaint();
             }
-
+        }
             @Override
             public void mouseReleased(MouseEvent e) {
                 Point p = scalePoint(e.getPoint());
+                p = clampPoint(p);
                 currentPoint = p;
 
                 Layer activeLayer = model.getActiveLayer();
@@ -112,16 +114,33 @@ public class PaintPanel extends JPanel {
                 model.saveStateForUndo();
 
                 if (tool == DrawnShape.ShapeType.PENCIL) {
-                    activeLayer.addShape(new DrawnShape(DrawnShape.ShapeType.PENCIL, freehandPoints, model.getCurrentColor(), model.getPencilSize()));
-                } else if (tool == DrawnShape.ShapeType.ERASER) {
-                    activeLayer.addShape(new DrawnShape(DrawnShape.ShapeType.ERASER, freehandPoints, null, model.getEraserSize()));
-                } else if (tool == DrawnShape.ShapeType.LINE) {
-                    activeLayer.addShape(new DrawnShape(DrawnShape.ShapeType.LINE, new Line2D.Float(startPoint, currentPoint), model.getCurrentColor(), model.getPencilSize()));
-                } else if (tool == DrawnShape.ShapeType.RECTANGLE) {
-                    activeLayer.addShape(new DrawnShape(DrawnShape.ShapeType.RECTANGLE, makeRectangle(startPoint, currentPoint), model.getCurrentColor(), model.getPencilSize()));
-                } else if (tool == DrawnShape.ShapeType.CIRCLE) {
-                    activeLayer.addShape(new DrawnShape(DrawnShape.ShapeType.CIRCLE, makeEllipse(startPoint, currentPoint), model.getCurrentColor(), model.getPencilSize()));
-                }
+                DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.PENCIL,
+                freehandPoints,model.getCurrentColor(),model.getPencilSize());
+            shape.setOpacity(model.getOpacity());
+            activeLayer.addShape(shape);
+            } else if (tool == DrawnShape.ShapeType.ERASER) { 
+                DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.ERASER,
+                freehandPoints,null,model.getEraserSize());
+            shape.setOpacity(model.getOpacity());
+            activeLayer.addShape(shape);
+
+            } else if (tool == DrawnShape.ShapeType.LINE) {
+                DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.LINE,
+                new Line2D.Float(startPoint, currentPoint),model.getCurrentColor(),model.getPencilSize());
+            shape.setOpacity(model.getOpacity());
+            activeLayer.addShape(shape);
+
+            } else if (tool == DrawnShape.ShapeType.RECTANGLE) {
+                DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.RECTANGLE,
+                makeRectangle(startPoint, currentPoint),model.getCurrentColor(),model.getPencilSize());
+            shape.setOpacity(model.getOpacity());
+            activeLayer.addShape(shape);
+            } else if (tool == DrawnShape.ShapeType.CIRCLE) {
+                DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.CIRCLE,makeEllipse(startPoint, currentPoint),
+                model.getCurrentColor(),model.getPencilSize());
+            shape.setOpacity(model.getOpacity());
+            activeLayer.addShape(shape);
+}
 
                 freehandPoints.clear();
                 startPoint = null;
@@ -184,16 +203,17 @@ public class PaintPanel extends JPanel {
         double zoom = model.getZoomScale();
         g2d.scale(zoom, zoom);
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        
+        //เพิ่มมา
+        // ตัดขอบไม่ให้การวาดล้นออกจากกระดาษ
+        // จำกัดพื้นที่วาดให้อยู่ในกระดาษ
+        g2d.clipRect(0, 0, BASE_WIDTH, BASE_HEIGHT);
 
         //เพิ่มมา
         // 4. วาดแผ่นกระดาษสีขาว (Canvas Paper) ตามขนาดตั้งต้น
         g2d.setColor(Color.WHITE);
         g2d.fillRect(0, 0, BASE_WIDTH, BASE_HEIGHT);
 
-        //เพิ่มมา
-        // ตัดขอบไม่ให้การวาดล้นออกจากกระดาษ
-        g2d.setClip(0, 0, BASE_WIDTH, BASE_HEIGHT);
-  
         drawLayersAndPreview(g2d);
         
         g2d.dispose();
@@ -242,6 +262,8 @@ public class PaintPanel extends JPanel {
 
         // 3. วาด Preview สำหรับเครื่องมืออื่นๆที่ไม่ใช่ยางลบ (เช่น ดินสอ, สี่เหลี่ยม, วงกลม)
         if (startPoint != null && currentPoint != null && model.getCurrentTool() != DrawnShape.ShapeType.ERASER) {
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,model.getOpacity()));
+
             g2d.setColor(model.getCurrentColor());
             g2d.setStroke(new BasicStroke(model.getPencilSize(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
@@ -253,12 +275,23 @@ public class PaintPanel extends JPanel {
             } else if (tool == DrawnShape.ShapeType.CIRCLE) {
                 g2d.draw(makeEllipse(startPoint, currentPoint));
             } else if (tool == DrawnShape.ShapeType.PENCIL && freehandPoints.size() > 1) {
-                for (int i = 0; i < freehandPoints.size() - 1; i++) {
-                    Point p1 = freehandPoints.get(i);
-                    Point p2 = freehandPoints.get(i + 1);
-                    g2d.drawLine(p1.x, p1.y, p2.x, p2.y);
-                }
+                Path2D path = new Path2D.Float();
+
+                path.moveTo(
+                freehandPoints.get(0).x,
+                freehandPoints.get(0).y
+    );
+
+    for (int i = 1; i < freehandPoints.size(); i++) {
+        path.lineTo(
+            freehandPoints.get(i).x,
+            freehandPoints.get(i).y
+        );
+    }
+
+    g2d.draw(path);
             }
         }
+        g2d.setComposite(AlphaComposite.SrcOver);
     }
 }

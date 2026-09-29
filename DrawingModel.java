@@ -10,8 +10,9 @@ public class DrawingModel {
     private DrawnShape.ShapeType currentTool = DrawnShape.ShapeType.PENCIL;
     private Color currentColor = Color.BLACK;
     private float pencilSize = 2.0f;
+    private float opacity = 1.0f;
     private float eraserSize = 15.0f;
-    private double zoomScale = 0.7; //
+    private double zoomScale = 1.0; 
     private boolean globalVisibility = true; // ปุ่ม On/Off รวมทุกเลเยอร์
 
     private Stack<List<Layer>> undoStack = new Stack<>();
@@ -131,4 +132,13 @@ public class DrawingModel {
         }
         return copy;
     }
+
+    //ความชัดของเส้น
+    public float getOpacity() {
+    return opacity;
+}
+
+    public void setOpacity(float opacity) {
+    this.opacity = opacity;
+}
 }

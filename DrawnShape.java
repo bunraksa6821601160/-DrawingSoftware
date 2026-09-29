@@ -1,6 +1,7 @@
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.awt.geom.Path2D;
 
 //public class DrawnShape implements Serializable {
 public class DrawnShape{
@@ -14,6 +15,7 @@ public class DrawnShape{
     private Color color;
     private float strokeWidth;
     private Font font;
+    private float opacity = 1.0f;
 
     // Constructor สำหรับ Shape ทั่วไป (Line, Rect, Circle)
     public DrawnShape(ShapeType type, Shape shape, Color color, float strokeWidth) {
@@ -58,6 +60,8 @@ public class DrawnShape{
             // คืนค่าโหมดการวาดกลับเป็นปกติ
             g2d.setComposite(AlphaComposite.SrcOver);
         }else{
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,opacity));
+
             g2d.setColor(color);
             g2d.setStroke(new BasicStroke(strokeWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
@@ -65,16 +69,23 @@ public class DrawnShape{
                 g2d.setFont(font);
                 g2d.drawString(text, textPosition.x, textPosition.y);
             } else if (type == ShapeType.PENCIL && points != null && points.size() > 1) {
-                for (int i = 0; i < points.size() - 1; i++) {
-                    Point p1 = points.get(i);
-                    Point p2 = points.get(i + 1);
-                    g2d.drawLine(p1.x, p1.y, p2.x, p2.y);
-                }
+                
+            //ทำให้วาดเป็นเส้น
+            Path2D path = new Path2D.Float();
+
+            path.moveTo(points.get(0).x, points.get(0).y);
+
+            for (int i = 1; i < points.size(); i++) {
+                path.lineTo(points.get(i).x, points.get(i).y);
+    }
+
+    g2d.draw(path);
             } else if (shape != null) {
                 g2d.draw(shape);
             }
+            g2d.setComposite(AlphaComposite.SrcOver);
         }
-        
+       g2d.setComposite(AlphaComposite.SrcOver); 
     }
 
     public boolean contains(Point p) {
@@ -90,4 +101,9 @@ public class DrawnShape{
         }
         return false;
     }
+
+    //Opacity
+    public void setOpacity(float opacity) {
+    this.opacity = opacity;
+}
 }

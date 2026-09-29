@@ -12,10 +12,10 @@ public class MenuPanel extends JPanel {
     private PaintPanel paintPanel;
     private File currentSaveFile;
 
-    //MenuPanel(DrawingModel model, PaintPanel paintPanel) ของเก่า
-    public MenuPanel(DrawingModel model, PaintPanel paintPanel, Layers layers) {
+    public MenuPanel(DrawingModel model, PaintPanel paintPanel, LayersPanel layers) {
         this.model = model;
         this.paintPanel = paintPanel;
+
         setLayout(new FlowLayout(FlowLayout.LEFT));
 
         JMenuBar menuBar = new JMenuBar();
@@ -27,6 +27,7 @@ public class MenuPanel extends JPanel {
         JMenuItem saveItem = new JMenuItem("Save");
         JMenuItem saveAsItem = new JMenuItem("Save As");
 
+        //-----------------ActionListioner--------------------------
         newItem.addActionListener(e -> {
             // สร้าง JFrame หน้าต่างใหม่
             SwingUtilities.invokeLater(() -> new Gui().setVisible(true));
@@ -46,6 +47,8 @@ public class MenuPanel extends JPanel {
         JMenu helpMenu = new JMenu("Help");
         JMenuItem aboutItem = new JMenuItem("About");
         JMenuItem howToItem = new JMenuItem("How to use");
+
+        //-----------------ActionListioner--------------------------
 
         aboutItem.addActionListener(e -> JOptionPane.showMessageDialog(this, 
                 "Java Swing Drawing Application\nVersion 1.0", "About", JOptionPane.INFORMATION_MESSAGE));
@@ -68,6 +71,8 @@ public class MenuPanel extends JPanel {
         // 3. ปุ่ม Undo / Redo บน MenuPanel
         JButton undoBtn = new JButton("Undo (Ctrl+Z)");
         JButton redoBtn = new JButton("Redo (Ctrl+Y)");
+
+        //-----------------ActionListioner--------------------------
 
         Action undoAction = new AbstractAction("Undo") {
             @Override
@@ -95,6 +100,7 @@ public class MenuPanel extends JPanel {
 
         // 4. การผูก Key Shortcuts (Ctrl+Z และ Ctrl+Y)
         setupShortcuts(undoAction, redoAction);
+
     }
 
     private void setupShortcuts(Action undoAction, Action redoAction) {
@@ -151,3 +157,4 @@ public class MenuPanel extends JPanel {
         }
     }
 }
+
