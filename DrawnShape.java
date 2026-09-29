@@ -1,7 +1,7 @@
 import java.awt.*;
+import java.awt.geom.Path2D;
 import java.util.ArrayList;
 import java.util.List;
-import java.awt.geom.Path2D;
 
 //public class DrawnShape implements Serializable {
 public class DrawnShape{
@@ -45,22 +45,26 @@ public class DrawnShape{
     public ShapeType getType() { return type; }
 
     public void draw(Graphics2D g2d) {
-        if(type == ShapeType.ERASER){
+
+        // 1. เปิด Anti-Aliasing และ Stroke Pure ทุกครั้งที่เริ่มวาด Shape
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+
+        if (type == ShapeType.ERASER) {
             // [แก้จุดที่ 1] สั่งให้ลบ Pixel ใน Buffer ให้โปร่งใส
             g2d.setComposite(AlphaComposite.Clear);
             g2d.setStroke(new BasicStroke(strokeWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        
+    
             if (points != null && points.size() > 1) {
-                for (int i = 0; i < points.size() - 1; i++) {
-                    Point p1 = points.get(i);
-                    Point p2 = points.get(i + 1);
-                    g2d.drawLine(p1.x, p1.y, p2.x, p2.y);
-                }
+                Path2D path = createSmoothPath(points);
+                g2d.draw(path);
             }
             // คืนค่าโหมดการวาดกลับเป็นปกติ
             g2d.setComposite(AlphaComposite.SrcOver);
-        }else{
-            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,opacity));
+
+        } else {
+            // [แก้จุดที่ 2] กำหนดค่า Opacity
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opacity));
 
             g2d.setColor(color);
             g2d.setStroke(new BasicStroke(strokeWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
@@ -69,23 +73,15 @@ public class DrawnShape{
                 g2d.setFont(font);
                 g2d.drawString(text, textPosition.x, textPosition.y);
             } else if (type == ShapeType.PENCIL && points != null && points.size() > 1) {
-                
-            //ทำให้วาดเป็นเส้น
-            Path2D path = new Path2D.Float();
-
-            path.moveTo(points.get(0).x, points.get(0).y);
-
-            for (int i = 1; i < points.size(); i++) {
-                path.lineTo(points.get(i).x, points.get(i).y);
-    }
-
-    g2d.draw(path);
+                Path2D path = createSmoothPath(points);
+                g2d.draw(path);
             } else if (shape != null) {
                 g2d.draw(shape);
             }
-            g2d.setComposite(AlphaComposite.SrcOver);
+
+        // [แก้ไข] คืนค่าโหมดการวาดกลับเป็นปกติทันทีหลังวาดรูปทรงนั้นเสร็จ
+        g2d.setComposite(AlphaComposite.SrcOver);
         }
-       g2d.setComposite(AlphaComposite.SrcOver); 
     }
 
     public boolean contains(Point p) {
@@ -104,6 +100,34 @@ public class DrawnShape{
 
     //Opacity
     public void setOpacity(float opacity) {
-    this.opacity = opacity;
-}
+        this.opacity = opacity;
+    }
+
+    // [เพิ่มเมธอดนี้] ช่วยสร้าง Path2D แบบโค้งมนด้วย Quad Curve (Bézier)
+    private Path2D createSmoothPath(List<Point> pts) {
+        Path2D path = new Path2D.Float();
+        if (pts == null || pts.isEmpty()) return path;
+
+        path.moveTo(pts.get(0).x, pts.get(0).y);
+
+        if (pts.size() == 2) {
+            path.lineTo(pts.get(1).x, pts.get(1).y);
+        } else {
+            for (int i = 1; i < pts.size() - 1; i++) {
+                Point p1 = pts.get(i);
+                Point p2 = pts.get(i + 1);
+
+                // หาจุดกึ่งกลางระหว่างจุดปัจจุบันกับจุดถัดไป
+                double midX = (p1.x + p2.x) / 2.0;
+                double midY = (p1.y + p2.y) / 2.0;
+
+                // ดัดเส้นโค้งผ่านจุด p1 ไปหยุดที่จุดกึ่งกลาง
+                path.quadTo(p1.x, p1.y, midX, midY);
+            }
+        // เชื่อมจุดสุดท้าย
+        Point last = pts.get(pts.size() - 1);
+        path.lineTo(last.x, last.y);
+        }
+        return path;
+    }
 }

@@ -1,4 +1,5 @@
 import java.awt.*;
+import java.awt.event.ActionListener;
 import javax.swing.*;
 
 public class ToolsPanel extends JPanel {
@@ -30,15 +31,15 @@ public class ToolsPanel extends JPanel {
             btn.addActionListener(e -> {
                 if (selectedButton != null) {
                     selectedButton.setBackground(null);
-        }
+                }
 
-        selectedButton = btn;
-        selectedButton.setBackground(Color.CYAN);
-    });
-    //เลือกดินสอตอนแรก
-    selectedButton = pencilBtn;
-    pencilBtn.setBackground(Color.CYAN);
-}
+                selectedButton = btn;
+                selectedButton.setBackground(Color.CYAN);
+            });
+            //เลือกดินสอตอนแรก
+            selectedButton = pencilBtn;
+            pencilBtn.setBackground(Color.CYAN);
+        }
         
 
         //รูปicon
@@ -81,9 +82,7 @@ public class ToolsPanel extends JPanel {
         JPanel sizePanel = new JPanel(new BorderLayout());
         sizePanel.setBorder(BorderFactory.createTitledBorder("Size"));
 
-        JSlider sizeSlider = new JSlider(
-        JSlider.VERTICAL, 1, 50, (int) model.getPencilSize()
-);
+        JSlider sizeSlider = new JSlider(JSlider.VERTICAL, 1, 50, (int) model.getPencilSize());
 
         sizeSlider.setMajorTickSpacing(10);
         sizeSlider.setPaintTicks(true);
@@ -97,7 +96,7 @@ public class ToolsPanel extends JPanel {
             model.setPencilSize(size);
             model.setEraserSize(size);
             sizeLabel.setText(String.valueOf(size));
-});
+        });
 
         sizePanel.add(sizeSlider, BorderLayout.CENTER);
         sizePanel.add(sizeLabel, BorderLayout.SOUTH);
@@ -107,9 +106,7 @@ public class ToolsPanel extends JPanel {
         JPanel opacityPanel = new JPanel(new BorderLayout());
         opacityPanel.setBorder(BorderFactory.createTitledBorder("Opacity"));
 
-        JSlider opacitySlider = new JSlider(
-        JSlider.VERTICAL, 0, 100, 100
-);
+        JSlider opacitySlider = new JSlider(JSlider.VERTICAL, 0, 100, 100);
 
         opacitySlider.setMajorTickSpacing(10);
         opacitySlider.setPaintTicks(true);
@@ -122,7 +119,7 @@ public class ToolsPanel extends JPanel {
         int value = opacitySlider.getValue();
         model.setOpacity(value / 100.0f);
         opacityLabel.setText(opacitySlider.getValue() + "%");
-});
+        });
 
         opacityPanel.add(opacitySlider, BorderLayout.CENTER);
         opacityPanel.add(opacityLabel, BorderLayout.SOUTH);
@@ -132,7 +129,7 @@ public class ToolsPanel extends JPanel {
         settingPanel.add(sizePanel);
         settingPanel.add(opacityPanel);
 
-add(settingPanel);
+        add(settingPanel);
 
         add(Box.createVerticalStrut(5));
 
@@ -145,15 +142,24 @@ add(settingPanel);
         JButton colorPickerBtn = new JButton("Color");
         colorPreviewBtn = new JButton("  ");
         colorPreviewBtn.setBackground(model.getCurrentColor());
-        colorPreviewBtn.setEnabled(false);
+        
+        // แล้วใช้คำสั่งพวกนี้ปรับแต่งปุ่มพรีวิวสีให้สวยงามแทน (เลือกหรือไม่ใส่ก็ได้)
+        colorPreviewBtn.setFocusable(false);
+        colorPreviewBtn.setOpaque(true);
+        colorPreviewBtn.setBorderPainted(true); // แสดงขอบปุ่มให้ดูเป็นช่องสี
 
-        colorPickerBtn.addActionListener(e -> {
-            Color chosen = JColorChooser.showDialog(this, "เลือกสีแปรงวาด", model.getCurrentColor());
+        // สร้าง Listener กลางสำหรับเปิด JColorChooser เพื่อลดโค้ดซ้ำซ้อน
+        ActionListener chooseColorAction = e -> {
+            Color chosen = JColorChooser.showDialog(this, "Select a brush color.", model.getCurrentColor());
             if (chosen != null) {
                 model.setCurrentColor(chosen);
                 colorPreviewBtn.setBackground(chosen);
             }
-        });
+        };
+
+        // ผูก Listener ให้ทั้ง 2 ปุ่มทำงานเหมือนกัน
+        colorPickerBtn.addActionListener(chooseColorAction);
+        colorPreviewBtn.addActionListener(chooseColorAction);
 
         colorPanel.add(colorPickerBtn);
         colorPanel.add(colorPreviewBtn);
@@ -162,10 +168,10 @@ add(settingPanel);
     }
     
     private ImageIcon resizeIcon(String path, int width, int height) {
-    ImageIcon icon = new ImageIcon(path);
-    Image image = icon.getImage().getScaledInstance(
-        width, height, Image.SCALE_SMOOTH
-    );
-    return new ImageIcon(image);
-}
+        ImageIcon icon = new ImageIcon(path);
+        Image image = icon.getImage().getScaledInstance(
+            width, height, Image.SCALE_SMOOTH
+        );
+        return new ImageIcon(image);
+    }
 }

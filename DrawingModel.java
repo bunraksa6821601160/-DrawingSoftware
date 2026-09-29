@@ -14,6 +14,7 @@ public class DrawingModel {
     private float eraserSize = 15.0f;
     private double zoomScale = 1.0; 
     private boolean globalVisibility = true; // ปุ่ม On/Off รวมทุกเลเยอร์
+    private boolean isModified = false;
 
     private Stack<List<Layer>> undoStack = new Stack<>();
     private Stack<List<Layer>> redoStack = new Stack<>();
@@ -79,6 +80,14 @@ public class DrawingModel {
     public double getZoomScale() { return zoomScale; }
     public void setZoomScale(double zoom) { this.zoomScale = zoom; }
 
+    public void setIsModified(boolean isModified) {
+        this.isModified = isModified;
+    }
+
+    public boolean isModified(){
+        return isModified;
+    }
+
     // ==========================================
     // Undo / Redo Mechanism (Deep Copy Snapshot)
     // ==========================================
@@ -104,6 +113,7 @@ public class DrawingModel {
             if (activeLayerIndex >= layers.size()) {
                 activeLayerIndex = layers.size() - 1;
             }
+            setIsModified(true);//มีการแก้ไขอย่าลืม save
         }
     }
 
@@ -119,6 +129,7 @@ public class DrawingModel {
             if (activeLayerIndex >= layers.size()) {
                 activeLayerIndex = layers.size() - 1;
             }
+            setIsModified(true);//มีการแก้ไขอย่าลืม save
         }
     }
 

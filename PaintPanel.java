@@ -2,12 +2,12 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.*;
-import java.awt.geom.Path2D;
 
 public class PaintPanel extends JPanel {
     private DrawingModel model;
@@ -98,9 +98,11 @@ public class PaintPanel extends JPanel {
                 DrawnShape.ShapeType tool = model.getCurrentTool();
                 if (tool == DrawnShape.ShapeType.PENCIL || tool == DrawnShape.ShapeType.ERASER) {
                     freehandPoints.add(p);
-                repaint();
+                }
+
+            repaint();
             }
-        }
+
             @Override
             public void mouseReleased(MouseEvent e) {
                 Point p = scalePoint(e.getPoint());
@@ -114,33 +116,33 @@ public class PaintPanel extends JPanel {
                 model.saveStateForUndo();
 
                 if (tool == DrawnShape.ShapeType.PENCIL) {
-                DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.PENCIL,
-                freehandPoints,model.getCurrentColor(),model.getPencilSize());
-            shape.setOpacity(model.getOpacity());
-            activeLayer.addShape(shape);
-            } else if (tool == DrawnShape.ShapeType.ERASER) { 
-                DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.ERASER,
-                freehandPoints,null,model.getEraserSize());
-            shape.setOpacity(model.getOpacity());
-            activeLayer.addShape(shape);
+                    DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.PENCIL,
+                    freehandPoints,model.getCurrentColor(),model.getPencilSize());
+                    shape.setOpacity(model.getOpacity());
+                    activeLayer.addShape(shape);
+                } else if (tool == DrawnShape.ShapeType.ERASER) { 
+                    DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.ERASER,
+                    freehandPoints,null,model.getEraserSize());
+                    shape.setOpacity(model.getOpacity());
+                    activeLayer.addShape(shape);
 
-            } else if (tool == DrawnShape.ShapeType.LINE) {
-                DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.LINE,
-                new Line2D.Float(startPoint, currentPoint),model.getCurrentColor(),model.getPencilSize());
-            shape.setOpacity(model.getOpacity());
-            activeLayer.addShape(shape);
+                } else if (tool == DrawnShape.ShapeType.LINE) {
+                    DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.LINE,
+                    new Line2D.Float(startPoint, currentPoint),model.getCurrentColor(),model.getPencilSize());
+                    shape.setOpacity(model.getOpacity());
+                    activeLayer.addShape(shape);
 
-            } else if (tool == DrawnShape.ShapeType.RECTANGLE) {
-                DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.RECTANGLE,
-                makeRectangle(startPoint, currentPoint),model.getCurrentColor(),model.getPencilSize());
-            shape.setOpacity(model.getOpacity());
-            activeLayer.addShape(shape);
-            } else if (tool == DrawnShape.ShapeType.CIRCLE) {
-                DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.CIRCLE,makeEllipse(startPoint, currentPoint),
-                model.getCurrentColor(),model.getPencilSize());
-            shape.setOpacity(model.getOpacity());
-            activeLayer.addShape(shape);
-}
+                } else if (tool == DrawnShape.ShapeType.RECTANGLE) {
+                    DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.RECTANGLE,
+                    makeRectangle(startPoint, currentPoint),model.getCurrentColor(),model.getPencilSize());
+                    shape.setOpacity(model.getOpacity());
+                    activeLayer.addShape(shape);
+                } else if (tool == DrawnShape.ShapeType.CIRCLE) {
+                    DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.CIRCLE,makeEllipse(startPoint, currentPoint),
+                    model.getCurrentColor(),model.getPencilSize());
+                    shape.setOpacity(model.getOpacity());
+                    activeLayer.addShape(shape);
+                }
 
                 freehandPoints.clear();
                 startPoint = null;
@@ -152,6 +154,17 @@ public class PaintPanel extends JPanel {
         addMouseListener(mouseHandler);
         addMouseMotionListener(mouseHandler);
     }
+
+    public int getBaseWidth() {
+        return BASE_WIDTH;
+    }
+
+    
+
+    public int getBaseHeight(){
+        return BASE_HEIGHT;
+    }
+
 
     private Point scalePoint(Point p) {
         double zoom = model.getZoomScale();
@@ -192,6 +205,8 @@ public class PaintPanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+        model.setIsModified(true);//มีการแก้ไขอย่าลืม save
+
         Graphics2D g2d = (Graphics2D) g.create();
 
         //เพิ่มมา
@@ -202,6 +217,7 @@ public class PaintPanel extends JPanel {
         // นำค่า Zoom Scale มาคำนวณการย่อ-ขยาย
         double zoom = model.getZoomScale();
         g2d.scale(zoom, zoom);
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         
         //เพิ่มมา
@@ -219,51 +235,66 @@ public class PaintPanel extends JPanel {
         g2d.dispose();
     }
 
-    private void drawLayersAndPreview(Graphics2D g2d) {
+    public void drawLayersAndPreview(Graphics2D g2d) {
         // 1. วาดแต่ละ Layer ลงบน Buffer แยกต่างหาก
         for (Layer layer : model.getLayers()) {
             if (layer.isVisible()) {
-                // สร้าง Image ใสสำหรับเรนเดอร์เฉพาะ Layer นี้
                 BufferedImage layerBuffer = new BufferedImage(
                     BASE_WIDTH, BASE_HEIGHT, BufferedImage.TYPE_INT_ARGB
                 );
                 Graphics2D gLayer = layerBuffer.createGraphics();
+            
+                // ตั้งค่าเรนเดอร์คุณภาพสูง
                 gLayer.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                gLayer.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+                gLayer.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 
                 // หากมีรูปภาพพื้นหลังของ Layer
                 if (layer.getBackgroundImage() != null) {
+                    // ปิดการเกลี่ยสีซ้ำสำหรับภาพที่โหลดเข้ามา (ป้องกันภาพฟุ้งซ้ำซ้อน)
+                    gLayer.setRenderingHint(
+                        RenderingHints.KEY_INTERPOLATION, 
+                        RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR
+                    );
+                
                     gLayer.drawImage(layer.getBackgroundImage(), 0, 0, null);
+            
+                    // คืนค่า Interpolation กลับเป็น Bicubic หรือ Bilinear สำหรับการวาด Shape ต่อไป
+                    gLayer.setRenderingHint(
+                        RenderingHints.KEY_INTERPOLATION, 
+                        RenderingHints.VALUE_INTERPOLATION_BICUBIC
+                    );
                 }
 
-                // วาด Shapes ทั้งหมดของ Layer นี้ (ยางลบจะลบเฉพาะ Pixel ใน layerBuffer นี้)
+                // วาด Shapes ทั้งหมดของ Layer นี้
                 for (DrawnShape shape : layer.getShapes()) {
                     shape.draw(gLayer);
                 }
 
-                // ถ้าเป็น Active Layer ที่กำลังลากยางลบอยู่ ให้วาด Preview ยางลบลงใน Layer นี้สดๆ
+                // [แก้ไขจุดที่ 1] เปลี่ยน Preview ยางลบขณะลากเมาส์ให้เป็นเส้นโค้ง smooth
                 if (layer == model.getActiveLayer() && startPoint != null && currentPoint != null) {
-                    if (model.getCurrentTool() == DrawnShape.ShapeType.ERASER) {
+                    if (model.getCurrentTool() == DrawnShape.ShapeType.ERASER && freehandPoints.size() > 1) {
                         gLayer.setComposite(AlphaComposite.Clear);
                         gLayer.setStroke(new BasicStroke(model.getEraserSize(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                        for (int i = 0; i < freehandPoints.size() - 1; i++) {
-                            Point p1 = freehandPoints.get(i);
-                            Point p2 = freehandPoints.get(i + 1);
-                            gLayer.drawLine(p1.x, p1.y, p2.x, p2.y);
-                        }
+    
+                        Path2D path = createSmoothPath(freehandPoints);
+                        gLayer.draw(path);
                     }
                 }
-
                 gLayer.dispose();
 
-                // 2. นำ Layer ที่วาดเสร็จแล้ว (ซึ่งมีส่วนโปร่งใสจากการลบ) มาแปะลงบนผืนกระดาษหลัก
+                // 2. นำ Layer ที่วาดเสร็จแล้วมาแปะลงบนผืนกระดาษหลัก
                 g2d.drawImage(layerBuffer, 0, 0, null);
             }
         }
 
-        // 3. วาด Preview สำหรับเครื่องมืออื่นๆที่ไม่ใช่ยางลบ (เช่น ดินสอ, สี่เหลี่ยม, วงกลม)
+        // 3. วาด Preview สำหรับเครื่องมืออื่นๆ (ดินสอ, สี่เหลี่ยม, วงกลม)
         if (startPoint != null && currentPoint != null && model.getCurrentTool() != DrawnShape.ShapeType.ERASER) {
-            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,model.getOpacity()));
+            // [แก้ไขจุดที่ 2] เปิด Anti-Aliasing ให้ g2d หลัก เพื่อให้ Preview ลื่นเนียน
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
 
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, model.getOpacity()));
             g2d.setColor(model.getCurrentColor());
             g2d.setStroke(new BasicStroke(model.getPencilSize(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
@@ -275,23 +306,38 @@ public class PaintPanel extends JPanel {
             } else if (tool == DrawnShape.ShapeType.CIRCLE) {
                 g2d.draw(makeEllipse(startPoint, currentPoint));
             } else if (tool == DrawnShape.ShapeType.PENCIL && freehandPoints.size() > 1) {
-                Path2D path = new Path2D.Float();
-
-                path.moveTo(
-                freehandPoints.get(0).x,
-                freehandPoints.get(0).y
-    );
-
-    for (int i = 1; i < freehandPoints.size(); i++) {
-        path.lineTo(
-            freehandPoints.get(i).x,
-            freehandPoints.get(i).y
-        );
-    }
-
-    g2d.draw(path);
+                // [แก้ไขจุดที่ 2] เปลี่ยน Preview ดินสอให้เป็นเส้นโค้ง smooth เช่นกัน
+                Path2D path = createSmoothPath(freehandPoints);
+                g2d.draw(path);
             }
         }
+    
+        // คืนค่า Composite กลับเสมอ
         g2d.setComposite(AlphaComposite.SrcOver);
+    }
+
+    // [เพิ่มเมธอดนี้ใน PaintPanel.java หากยังไม่มี]
+    private Path2D createSmoothPath(List<Point> pts) {
+        Path2D path = new Path2D.Float();
+        if (pts == null || pts.isEmpty()) return path;
+
+        path.moveTo(pts.get(0).x, pts.get(0).y);
+
+        if (pts.size() == 2) {
+            path.lineTo(pts.get(1).x, pts.get(1).y);
+        } else {
+            for (int i = 1; i < pts.size() - 1; i++) {
+                Point p1 = pts.get(i);
+                Point p2 = pts.get(i + 1);
+
+                double midX = (p1.x + p2.x) / 2.0;
+                double midY = (p1.y + p2.y) / 2.0;
+
+                path.quadTo(p1.x, p1.y, midX, midY);
+            }
+        Point last = pts.get(pts.size() - 1);
+        path.lineTo(last.x, last.y);
+        }
+        return path;
     }
 }
