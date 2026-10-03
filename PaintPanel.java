@@ -74,7 +74,8 @@ public class PaintPanel extends JPanel {
                         String input = JOptionPane.showInputDialog(PaintPanel.this, "Please enter the text to print:");
                         if (input != null && !input.trim().isEmpty()) {
                             model.saveStateForUndo();
-                            DrawnShape textShape = new DrawnShape(input, p, new Font("SansSerif", Font.PLAIN, 18), model.getCurrentColor());
+                            //DrawnShape textShape = new DrawnShape(input, p, new Font("SansSerif", Font.PLAIN, 18), model.getCurrentColor());
+                            DrawnShape textShape = new DrawnShape(input, p, new Font("SansSerif", Font.PLAIN, (int)model.getPencilSize()+10), model.getCurrentColor());
                             textShape.setOpacity(model.getOpacity());
                             activeLayer.addShape(textShape);
                             repaint();
