@@ -117,30 +117,33 @@ public class PaintPanel extends JPanel {
                 model.saveStateForUndo();
 
                 if (tool == DrawnShape.ShapeType.PENCIL) {
-                    DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.PENCIL,
-                    freehandPoints,model.getCurrentColor(),model.getPencilSize());
+                    // [แก้ไข] หากเป็นการคลิกจุดเดียว ให้เพิ่มจุดเดิมซ้ำ เพื่อให้วาดเป็นจุดได้
+                    if (freehandPoints.size() == 1) {
+                        freehandPoints.add(new Point(p.x, p.y));
+                    }
+                    DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.PENCIL, freehandPoints, model.getCurrentColor(), model.getPencilSize());
                     shape.setOpacity(model.getOpacity());
                     activeLayer.addShape(shape);
                 } else if (tool == DrawnShape.ShapeType.ERASER) { 
-                    DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.ERASER,
-                    freehandPoints,null,model.getEraserSize());
+                    // [แก้ไข] หากเป็นการคลิกจุดเดียว ให้เพิ่มจุดเดิมซ้ำ เพื่อให้วาดเป็นจุดได้
+                    if (freehandPoints.size() == 1) {
+                        freehandPoints.add(new Point(p.x, p.y));
+                    }
+                    DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.ERASER, freehandPoints, null, model.getEraserSize());
                     shape.setOpacity(model.getOpacity());
                     activeLayer.addShape(shape);
 
                 } else if (tool == DrawnShape.ShapeType.LINE) {
-                    DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.LINE,
-                    new Line2D.Float(startPoint, currentPoint),model.getCurrentColor(),model.getPencilSize());
+                    DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.LINE, new Line2D.Float(startPoint, currentPoint), model.getCurrentColor(), model.getPencilSize());
                     shape.setOpacity(model.getOpacity());
                     activeLayer.addShape(shape);
 
                 } else if (tool == DrawnShape.ShapeType.RECTANGLE) {
-                    DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.RECTANGLE,
-                    makeRectangle(startPoint, currentPoint),model.getCurrentColor(),model.getPencilSize());
+                    DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.RECTANGLE, makeRectangle(startPoint, currentPoint), model.getCurrentColor(), model.getPencilSize());
                     shape.setOpacity(model.getOpacity());
                     activeLayer.addShape(shape);
                 } else if (tool == DrawnShape.ShapeType.CIRCLE) {
-                    DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.CIRCLE,makeEllipse(startPoint, currentPoint),
-                    model.getCurrentColor(),model.getPencilSize());
+                    DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.CIRCLE,makeEllipse(startPoint, currentPoint), model.getCurrentColor(), model.getPencilSize());
                     shape.setOpacity(model.getOpacity());
                     activeLayer.addShape(shape);
                 }
