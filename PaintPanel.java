@@ -61,6 +61,7 @@ public class PaintPanel extends JPanel {
                         }
                     }
 
+                    //มีข้อความเดิมอยู่ขึ้นหน้าต่างว่าจะลบไหม
                     if (targetText != null) {
                         int opt = JOptionPane.showConfirmDialog(PaintPanel.this, 
                                 "Do you want to delete this message?", "Delete message", JOptionPane.YES_NO_OPTION);
@@ -231,8 +232,30 @@ public class PaintPanel extends JPanel {
 
         //เพิ่มมา
         // 4. วาดแผ่นกระดาษสีขาว (Canvas Paper) ตามขนาดตั้งต้น
-        g2d.setColor(Color.WHITE);
-        g2d.fillRect(0, 0, BASE_WIDTH, BASE_HEIGHT);
+        //g2d.setColor(Color.WHITE);
+        //g2d.fillRect(0, 0, BASE_WIDTH, BASE_HEIGHT);
+        // ==========================================
+        // 4. วาดกระดาษแบบตารางโปร่งใส (Checkerboard)
+        // ==========================================
+        int tileSize = 50; // ขนาดของช่องตาราง (10x10 พิกเซล)
+        Color color1 = Color.WHITE;                  // สีขาว
+        Color color2 = new Color(220, 220, 220);     // สีเทาอ่อน (ให้ตัดกับขาวและเด่นกว่าพื้นหลัง)
+
+        for (int y = 0; y < BASE_HEIGHT; y += tileSize) {
+            for (int x = 0; x < BASE_WIDTH; x += tileSize) {
+                // คำนวณช่วงกว้าง/ยาว ของช่องสุดท้ายไม่ให้เกินขอบ BASE_WIDTH/BASE_HEIGHT
+                int w = Math.min(tileSize, BASE_WIDTH - x);
+                int h = Math.min(tileSize, BASE_HEIGHT - y);
+
+                // สลับสีตารางแบบหมากรุก
+                if ((x / tileSize + y / tileSize) % 2 == 0) {
+                    g2d.setColor(color1);
+                } else {
+                    g2d.setColor(color2);
+                }
+                g2d.fillRect(x, y, w, h);
+            }
+        }
 
         drawLayersAndPreview(g2d);
         

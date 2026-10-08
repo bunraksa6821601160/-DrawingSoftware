@@ -49,6 +49,7 @@ public class DrawnShape{
         // 1. เปิด Anti-Aliasing และ Stroke Pure ทุกครั้งที่เริ่มวาด Shape
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 
         if (type == ShapeType.ERASER) {
             // [แก้จุดที่ 1] สั่งให้ลบ Pixel ใน Buffer ให้โปร่งใส
@@ -86,7 +87,13 @@ public class DrawnShape{
 
     public boolean contains(Point p) {
         if (type == ShapeType.TEXT && textPosition != null && text != null) {
-            Rectangle bounds = new Rectangle(textPosition.x, textPosition.y - 15, text.length() * 10, 20);
+            int fontSize = font.getSize();
+
+            int ascent = (int) (fontSize * 0.85);        // ระยะดันขอบบนขึ้นไปจากจุด Baseline
+            int width  = (int) (text.length() * fontSize * 0.6); // ความกว้างโดยประมาณต่อตัวอักษร
+            int height = (int) (fontSize * 1.15);        // ความสูงรวม (รวมระยะสระ/วรรณยุกต์)
+
+            Rectangle bounds = new Rectangle(textPosition.x, textPosition.y - ascent, width, height);
 
             // เรียกใช้ contains ของ java.awt.Rectangle (คนละตัวกัน)
             return bounds.contains(p);
