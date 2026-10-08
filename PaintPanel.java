@@ -98,8 +98,9 @@ public class PaintPanel extends JPanel {
                 DrawnShape.ShapeType tool = model.getCurrentTool();
                 if (tool == DrawnShape.ShapeType.PENCIL || tool == DrawnShape.ShapeType.ERASER) {
                     freehandPoints.add(p);
-                repaint();
+                
             }
+            repaint();
         }
             @Override
             public void mouseReleased(MouseEvent e) {
@@ -193,6 +194,10 @@ public class PaintPanel extends JPanel {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g.create();
+
+    g2d.setRenderingHint(RenderingHints.KEY_RENDERING,RenderingHints.VALUE_RENDER_QUALITY);
+
+    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);
 
         //เพิ่มมา
         // 1. เคลียร์พื้นที่ทั้งหมดของ Panel ด้วยสีเทาอ่อนก่อน (แก้ปัญหาทิ้งคราบ/เส้นขาว)
