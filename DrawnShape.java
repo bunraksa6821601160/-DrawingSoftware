@@ -42,12 +42,20 @@ public class DrawnShape{
         this.color = color;
     }
 
-    public ShapeType getType() { return type; }
+    public ShapeType getType() { 
+        return type; 
+    }
 
     public void draw(Graphics2D g2d) {
+
+    g2d.setRenderingHint(RenderingHints.KEY_RENDERING,RenderingHints.VALUE_RENDER_QUALITY);
+
+    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);
+
         if(type == ShapeType.ERASER){
             // [แก้จุดที่ 1] สั่งให้ลบ Pixel ใน Buffer ให้โปร่งใส
             g2d.setComposite(AlphaComposite.Clear);
+            //กำหนดขนาดยางลบ , ปลายมน , โค้งมน
             g2d.setStroke(new BasicStroke(strokeWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         
             if (points != null && points.size() > 1) {
@@ -68,19 +76,24 @@ public class DrawnShape{
             if (type == ShapeType.TEXT && text != null) {
                 g2d.setFont(font);
                 g2d.drawString(text, textPosition.x, textPosition.y);
-            } else if (type == ShapeType.PENCIL && points != null && points.size() > 1) {
+
+    } else if (type == ShapeType.PENCIL && points != null && points.size() > 1) {
                 
             //ทำให้วาดเป็นเส้น
             Path2D path = new Path2D.Float();
 
+            //กำหนดจุดเริ่มแต่ยังไม่วาด
             path.moveTo(points.get(0).x, points.get(0).y);
 
+            //จากตำแหน่งปัจจุบัน ให้ลากเส้นไปยังจุดถัดไป
             for (int i = 1; i < points.size(); i++) {
                 path.lineTo(points.get(i).x, points.get(i).y);
     }
 
+    //วาดจริง 
     g2d.draw(path);
-            } else if (shape != null) {
+
+    } else if (shape != null) {
                 g2d.draw(shape);
             }
             g2d.setComposite(AlphaComposite.SrcOver);
