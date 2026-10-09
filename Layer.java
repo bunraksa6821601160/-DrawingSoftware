@@ -2,11 +2,15 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * ทำหน้าที่เป็น Layer หนึ่งชั้นที่เก็บหลายๆรูปทรงไว้ข้างใน
+ * Layer
+ */
 public class Layer {
     private String name;
     private boolean visible = true; // true = On, false = Off
-    private List<DrawnShape> shapes = new ArrayList<>();
-    private BufferedImage backgroundImage;
+    private List<DrawnShape> shapes = new ArrayList<>(); //เก็บหลายๆ รูปทรง
+    private BufferedImage backgroundImage; //เก็บภาพที่นำเข้า
 
     public Layer(String name) {
         this.name = name;
@@ -25,6 +29,10 @@ public class Layer {
     public BufferedImage getBackgroundImage() { return backgroundImage; }
     public void setBackgroundImage(BufferedImage img) { this.backgroundImage = img; }
 
+    /**
+     * คัดลอก layer ตัวนี้ สำหรับทำ undo redo
+     * 
+     */
     public Layer cloneLayer() {
         Layer cloned = new Layer(this.name);
         cloned.setVisible(this.visible);

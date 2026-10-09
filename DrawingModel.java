@@ -3,9 +3,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
+/**
+ * เป็นตัวจัดการสถานะของโปรแกรม และ undo redo
+ * DrawingModel
+ */
 public class DrawingModel {
-    private List<Layer> layers = new ArrayList<>();
-    private int activeLayerIndex = 0;
+    private List<Layer> layers = new ArrayList<>(); // เก็บหลายเลเยอร์
+    private int activeLayerIndex = 0; // ตำแหน่งของเลเยอร์ที่เลือกอยู่
 
     private DrawnShape.ShapeType currentTool = DrawnShape.ShapeType.PENCIL;
     private Color currentColor = Color.BLACK;
@@ -14,6 +18,7 @@ public class DrawingModel {
     private float eraserSize = 15.0f;
     private double zoomScale = 1.0; 
     private boolean globalVisibility = true; // ปุ่ม On/Off รวมทุกเลเยอร์
+    private boolean isModified = false;
 
     private Stack<List<Layer>> undoStack = new Stack<>();
     private Stack<List<Layer>> redoStack = new Stack<>();
@@ -25,6 +30,10 @@ public class DrawingModel {
     // Getters & Setters สำหรับ Layer
     public List<Layer> getLayers() { return layers; }
     
+    /**
+     * 
+     * @return ส่งเลเยอร์ที่เลือกอยู่
+     */
     public Layer getActiveLayer() {
         if (activeLayerIndex >= 0 && activeLayerIndex < layers.size()) {
             return layers.get(activeLayerIndex);
@@ -55,6 +64,7 @@ public class DrawingModel {
     }
 
     public void toggleGlobalVisibility() {
+        saveStateForUndo();
         globalVisibility = !globalVisibility;
         for (Layer l : layers) {
             l.setVisible(globalVisibility);
@@ -78,6 +88,14 @@ public class DrawingModel {
 
     public double getZoomScale() { return zoomScale; }
     public void setZoomScale(double zoom) { this.zoomScale = zoom; }
+
+    public void setIsModified(boolean isModified) {
+        this.isModified = isModified;
+    }
+
+    public boolean isModified(){
+        return isModified;
+    }
 
     // ==========================================
     // Undo / Redo Mechanism (Deep Copy Snapshot)
@@ -104,6 +122,7 @@ public class DrawingModel {
             if (activeLayerIndex >= layers.size()) {
                 activeLayerIndex = layers.size() - 1;
             }
+            setIsModified(true);//มีการแก้ไขอย่าลืม save
         }
     }
 
@@ -119,6 +138,7 @@ public class DrawingModel {
             if (activeLayerIndex >= layers.size()) {
                 activeLayerIndex = layers.size() - 1;
             }
+            setIsModified(true);//มีการแก้ไขอย่าลืม save
         }
     }
 
@@ -135,10 +155,10 @@ public class DrawingModel {
 
     //ความชัดของเส้น
     public float getOpacity() {
-    return opacity;
-}
+        return opacity;
+    }
 
     public void setOpacity(float opacity) {
-    this.opacity = opacity;
-}
+        this.opacity = opacity;
+    }
 }

@@ -2,18 +2,18 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.*;
-import java.awt.geom.Path2D;
 
 public class PaintPanel extends JPanel {
     private DrawingModel model;
     private Point startPoint;
     private Point currentPoint;
-    private List<Point> freehandPoints = new ArrayList<>();
+    private List<Point> freehandPoints = new ArrayList<>(); //เก็บจุดหลายๆจุด
 
     // 1. ขนาดกระดาษตั้งต้น (Base Canvas Size)
     private int BASE_WIDTH = 800;
@@ -22,61 +22,71 @@ public class PaintPanel extends JPanel {
     public PaintPanel(DrawingModel model) {
         this.model = model;
 
-        // กำหนดสีพื้นหลังภายนอกกระดาษ (เช่น สีเทาอ่อน เพื่อให้เห็นขอบกระดาษชัดเจน)
-        setBackground(Color.LIGHT_GRAY); 
-        updateCanvasSize(); // อัปเดตขนาดเริ่มต้น
-
-        //setPreferredSize(new Dimension(1000, 780)); // ขนาด Canvas ตั้งต้น
-        //setBackground(Color.WHITE);
-        //setBorder(new LineBorder(Color.DARK_GRAY, 20)); // เพิ่มกรอบรอบ Canvas
+        // กำหนดสีพื้นหลังภายนอกกระดาษ
+        setBackground(Color.LIGHT_GRAY);
+        
+        // อัปเดตขนาดเริ่มต้น
+        updateCanvasSize();
 
         MouseAdapter mouseHandler = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
+
+                //ดึงเลเยอร์ที่เลือกอยู่มาใช้
+                Layer activeLayer = model.getActiveLayer();
+                //เช็คว่ามีหรือมองเห็นหรือเปล่า เพราะ ถ้ามองไม่เห็นไม่ควรวาดได้
+                if (activeLayer == null || !activeLayer.isVisible()) return;
+
+
+                //แปลงพิกัดตำแหน่งเมาส์ (Mouse Event) ให้สอดคล้องกับสเกล (Scale/Zoom) ของหน้าจอ
                 Point p = scalePoint(e.getPoint());
 
-                //เพิ่มมา
                 // ป้องกันไม่ให้จุดเริ่มต้นอยู่นอกกระดาษ
                 if (!isInsideCanvas(p)) return;
 
-                p = clampPoint(p);
+                //เช็ตค่าไว้ก่อน ใช้ทีหลัง
                 startPoint = p;
                 currentPoint = p;
-
-                Layer activeLayer = model.getActiveLayer();
-                if (activeLayer == null || !activeLayer.isVisible()) return;
-
+                
+                
+                //ดูว่าตอนนี้ใช้เครื่องมืออะไรอยู่
                 DrawnShape.ShapeType tool = model.getCurrentTool();
 
                 if (tool == DrawnShape.ShapeType.PENCIL || tool == DrawnShape.ShapeType.ERASER) {
-                    freehandPoints.clear();
+                    freehandPoints.clear(); //ลบจุดเก่าทั้งหมด
                     freehandPoints.add(p);
                 } else if (tool == DrawnShape.ShapeType.TEXT) {
                     // ตรวจสอบว่าคลิกโดนข้อความเดิมเพื่อลบหรือไม่
-                    DrawnShape targetText = null;
+
+                    DrawnShape targetText = null; //ใช้เก็บรูปทรงที่เป็นข้อความ
+
+                    //ตรวจทุก shape ใน layer นั้น
                     for (DrawnShape s : activeLayer.getShapes()) {
-                        if (s.getType() == DrawnShape.ShapeType.TEXT && s.contains(p)) {
+                        if (s.getType() == DrawnShape.ShapeType.TEXT && s.containsText(p)) {
                             targetText = s;
-                            break;
+                            break; //เจอข้อความแล้วออกจากลูป
                         }
                     }
 
+                    //มีข้อความเดิมอยู่ขึ้นหน้าต่างว่าจะลบไหม
                     if (targetText != null) {
-                        int opt = JOptionPane.showConfirmDialog(PaintPanel.this, 
-                                "Do you want to delete this message?", "Delete message", JOptionPane.YES_NO_OPTION);
+                        int opt = JOptionPane.showConfirmDialog(PaintPanel.this, "Do you want to delete this message?", "Delete message", JOptionPane.YES_NO_OPTION);
                         if (opt == JOptionPane.YES_OPTION) {
-                            model.saveStateForUndo();
-                            activeLayer.removeShape(targetText);
+                            model.saveStateForUndo(); //บันทึกสำหรับทำ undo
+                            activeLayer.removeShape(targetText); //ลบข้อความนั้นจากเลเยอร์ที่เลือกอยู่
                             repaint();
                         }
                     } else {
                         // พิมพ์ข้อความใหม่
                         String input = JOptionPane.showInputDialog(PaintPanel.this, "Please enter the text to print:");
                         if (input != null && !input.trim().isEmpty()) {
-                            model.saveStateForUndo();
-                            DrawnShape textShape = new DrawnShape(input, p, new Font("SansSerif", Font.PLAIN, 18), model.getCurrentColor());
+                            model.saveStateForUndo(); //บันทึกสำหรับทำ undo
+
+                            //สร้างข้อความใหม่
+                            DrawnShape textShape = new DrawnShape(input, p, new Font("SansSerif", Font.PLAIN, (int)model.getPencilSize()+10), model.getCurrentColor());
                             textShape.setOpacity(model.getOpacity());
-                            activeLayer.addShape(textShape);
+
+                            activeLayer.addShape(textShape); //เพิ่มข้อความไปเก็บที่เลเยอร์ที่เลือกอยู่
                             repaint();
                         }
                     }
@@ -85,65 +95,75 @@ public class PaintPanel extends JPanel {
 
             @Override
             public void mouseDragged(MouseEvent e) {
+                
+                //ดึงเลเยอร์ที่เลือกอยู่มาใช้
+                Layer activeLayer = model.getActiveLayer();
+                //เช็คว่ามีหรือมองเห็นหรือเปล่า เพราะ ถ้ามองไม่เห็นไม่ควรวาดได้
+                if (activeLayer == null || !activeLayer.isVisible()) return;
+
+                //แปลงพิกัดตำแหน่งเมาส์ (Mouse Event) ให้สอดคล้องกับสเกล (Scale/Zoom) ของหน้าจอ
                 Point p = scalePoint(e.getPoint());
-                //เพิ่มมา
-                // หนีบพิกัดการลากให้อยู่ในขอบเขตกระดาษเสมอ
-                p = clampPoint(p);
 
                 currentPoint = p;
-
-                Layer activeLayer = model.getActiveLayer();
-                if (activeLayer == null || !activeLayer.isVisible()) return;
 
                 DrawnShape.ShapeType tool = model.getCurrentTool();
                 if (tool == DrawnShape.ShapeType.PENCIL || tool == DrawnShape.ShapeType.ERASER) {
-                    freehandPoints.add(p);
-                
-            }
+                    freehandPoints.add(p); //เก็บจุดไว้รอวาดต่อ
+                }
+
             repaint();
-        }
+            }
+
             @Override
             public void mouseReleased(MouseEvent e) {
-                Point p = scalePoint(e.getPoint());
-                p = clampPoint(p);
-                currentPoint = p;
 
+                //ดึงเลเยอร์ที่เลือกอยู่มาใช้
                 Layer activeLayer = model.getActiveLayer();
+                //เช็คว่ามีหรือมองเห็นหรือเปล่า เพราะ ถ้ามองไม่เห็นไม่ควรวาดได้
                 if (activeLayer == null || !activeLayer.isVisible()) return;
+
+                //แปลงพิกัดตำแหน่งเมาส์ (Mouse Event) ให้สอดคล้องกับสเกล (Scale/Zoom) ของหน้าจอ
+                Point p = scalePoint(e.getPoint());
+
+                currentPoint = p;
 
                 DrawnShape.ShapeType tool = model.getCurrentTool();
                 model.saveStateForUndo();
 
+                //เพิ่ม Shape ใหม่ลงในเลเยอร์ที่เลือกอยู่
                 if (tool == DrawnShape.ShapeType.PENCIL) {
-                DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.PENCIL,
-                freehandPoints,model.getCurrentColor(),model.getPencilSize());
-            shape.setOpacity(model.getOpacity());
-            activeLayer.addShape(shape);
-            } else if (tool == DrawnShape.ShapeType.ERASER) { 
-                DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.ERASER,
-                freehandPoints,null,model.getEraserSize());
-            shape.setOpacity(model.getOpacity());
-            activeLayer.addShape(shape);
+                    //หากเป็นการคลิกจุดเดียว ให้เพิ่มจุดเดิมซ้ำ เพื่อให้วาดเป็นจุดได้
+                    if (freehandPoints.size() == 1) {
+                        freehandPoints.add(new Point(p.x, p.y));
+                    }
+                    DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.PENCIL, freehandPoints, model.getCurrentColor(), model.getPencilSize());
+                    shape.setOpacity(model.getOpacity());
+                    activeLayer.addShape(shape);
+                } else if (tool == DrawnShape.ShapeType.ERASER) { 
+                    // หากเป็นการคลิกจุดเดียว ให้เพิ่มจุดเดิมซ้ำ เพื่อให้วาดเป็นจุดได้
+                    if (freehandPoints.size() == 1) {
+                        freehandPoints.add(new Point(p.x, p.y));
+                    }
+                    DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.ERASER, freehandPoints, null, model.getEraserSize());
+                    shape.setOpacity(model.getOpacity());
+                    activeLayer.addShape(shape);
 
-            } else if (tool == DrawnShape.ShapeType.LINE) {
-                DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.LINE,
-                new Line2D.Float(startPoint, currentPoint),model.getCurrentColor(),model.getPencilSize());
-            shape.setOpacity(model.getOpacity());
-            activeLayer.addShape(shape);
+                } else if (tool == DrawnShape.ShapeType.LINE) {
+                    DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.LINE, new Line2D.Float(startPoint, currentPoint), model.getCurrentColor(), model.getPencilSize());
+                    shape.setOpacity(model.getOpacity());
+                    activeLayer.addShape(shape);
 
-            } else if (tool == DrawnShape.ShapeType.RECTANGLE) {
-                DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.RECTANGLE,
-                makeRectangle(startPoint, currentPoint),model.getCurrentColor(),model.getPencilSize());
-            shape.setOpacity(model.getOpacity());
-            activeLayer.addShape(shape);
-            } else if (tool == DrawnShape.ShapeType.CIRCLE) {
-                DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.CIRCLE,makeEllipse(startPoint, currentPoint),
-                model.getCurrentColor(),model.getPencilSize());
-            shape.setOpacity(model.getOpacity());
-            activeLayer.addShape(shape);
-}
+                } else if (tool == DrawnShape.ShapeType.RECTANGLE) {
+                    DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.RECTANGLE, makeRectangle(startPoint, currentPoint), model.getCurrentColor(), model.getPencilSize());
+                    shape.setOpacity(model.getOpacity());
+                    activeLayer.addShape(shape);
+                } else if (tool == DrawnShape.ShapeType.CIRCLE) {
+                    DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.CIRCLE,makeEllipse(startPoint, currentPoint), model.getCurrentColor(), model.getPencilSize());
+                    shape.setOpacity(model.getOpacity());
+                    activeLayer.addShape(shape);
+                }
 
-                freehandPoints.clear();
+                freehandPoints.clear(); //ปล่อยปุ่มแปลว่าวาดเสร็จแล้วลบจุดเก่าทิ้ง
                 startPoint = null;
                 currentPoint = null;
                 repaint();
@@ -154,6 +174,17 @@ public class PaintPanel extends JPanel {
         addMouseMotionListener(mouseHandler);
     }
 
+    public int getBaseWidth() {
+        return BASE_WIDTH;
+    }
+
+    public int getBaseHeight(){
+        return BASE_HEIGHT;
+    }
+
+    /**
+     * แปลงพิกัดตำแหน่งเมาส์ (Mouse Event) ให้สอดคล้องกับสเกล (Scale/Zoom) ของหน้าจอ
+     */
     private Point scalePoint(Point p) {
         double zoom = model.getZoomScale();
         return new Point((int) (p.x / zoom), (int) (p.y / zoom));
@@ -167,20 +198,16 @@ public class PaintPanel extends JPanel {
         return new Ellipse2D.Float(Math.min(p1.x, p2.x), Math.min(p1.y, p2.y), Math.abs(p1.x - p2.x), Math.abs(p1.y - p2.y));
     }
 
-    //เพิ่มมา
+    /**
+     * ป้องกันไม่ให้จุดเริ่มต้นอยู่นอกกระดาษ
+     */
     private boolean isInsideCanvas(Point p) {
         return p.x >= 0 && p.x <= BASE_WIDTH && p.y >= 0 && p.y <= BASE_HEIGHT;
     }
-
-    //เพิ่มมา
-    private Point clampPoint(Point p) {
-        int x = Math.max(0, Math.min(p.x, BASE_WIDTH));
-        int y = Math.max(0, Math.min(p.y, BASE_HEIGHT));
-        return new Point(x, y);
-    }
-
-    //เพิ่มมา
-    // 3. เมธอดสำหรับคำนวณขนาด PreferredSize ของ Panel ตามอัตราซูม
+    
+    /**
+     *คำนวณขนาด PreferredSize ของ Panel ตามอัตราซูม
+     */
     public void updateCanvasSize() {
         double zoom = model.getZoomScale();
         int newWidth = (int) (BASE_WIDTH * zoom);
@@ -193,110 +220,163 @@ public class PaintPanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+        model.setIsModified(true);//มีการแก้ไขอย่าลืม save
+
         Graphics2D g2d = (Graphics2D) g.create();
 
-    g2d.setRenderingHint(RenderingHints.KEY_RENDERING,RenderingHints.VALUE_RENDER_QUALITY);
-
-    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);
-
-        //เพิ่มมา
-        // 1. เคลียร์พื้นที่ทั้งหมดของ Panel ด้วยสีเทาอ่อนก่อน (แก้ปัญหาทิ้งคราบ/เส้นขาว)
+        //เคลียร์พื้นที่ทั้งหมดของ Panel ด้วยสีเทาอ่อนก่อน (แก้ปัญหาทิ้งคราบ/เส้นขาว)
         g2d.setColor(Color.LIGHT_GRAY);
         g2d.fillRect(0, 0, getWidth(), getHeight());
 
         // นำค่า Zoom Scale มาคำนวณการย่อ-ขยาย
         double zoom = model.getZoomScale();
         g2d.scale(zoom, zoom);
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         
-        //เพิ่มมา
         // ตัดขอบไม่ให้การวาดล้นออกจากกระดาษ
         // จำกัดพื้นที่วาดให้อยู่ในกระดาษ
         g2d.clipRect(0, 0, BASE_WIDTH, BASE_HEIGHT);
+;
+        
+        // วาดกระดาษแบบตารางโปร่งใส (Checkerboard)
+        int tileSize = 50; // ขนาดของช่องตาราง
+        Color color1 = Color.WHITE; // สีขาว
+        Color color2 = new Color(220, 220, 220); // สีเทาอ่อน (ให้ตัดกับขาวและเด่นกว่าพื้นหลัง)
 
-        //เพิ่มมา
-        // 4. วาดแผ่นกระดาษสีขาว (Canvas Paper) ตามขนาดตั้งต้น
-        g2d.setColor(Color.WHITE);
-        g2d.fillRect(0, 0, BASE_WIDTH, BASE_HEIGHT);
+        //วาดตาราง
+        for (int y = 0; y < BASE_HEIGHT; y += tileSize) {
+            for (int x = 0; x < BASE_WIDTH; x += tileSize) {
+                // คำนวณช่วงกว้าง/ยาว ของช่องสุดท้ายไม่ให้เกินขอบ BASE_WIDTH/BASE_HEIGHT
+                int w = Math.min(tileSize, BASE_WIDTH - x);
+                int h = Math.min(tileSize, BASE_HEIGHT - y);
 
+                // สลับสีตารางแบบหมากรุก
+                if ((x / tileSize + y / tileSize) % 2 == 0) {
+                    g2d.setColor(color1);
+                } else {
+                    g2d.setColor(color2);
+                }
+                g2d.fillRect(x, y, w, h);
+            }
+        }
+
+        //วาดทุกเลเยอร์
         drawLayersAndPreview(g2d);
         
+        //ปิดใช้ g2d เพื่อคืนทรัพยากรในระบบ
         g2d.dispose();
     }
 
-    private void drawLayersAndPreview(Graphics2D g2d) {
+    public void drawLayersAndPreview(Graphics2D g2d) {
         // 1. วาดแต่ละ Layer ลงบน Buffer แยกต่างหาก
         for (Layer layer : model.getLayers()) {
+
+            //วาดเฉพาะเลเยอร์ที่เห็น
             if (layer.isVisible()) {
-                // สร้าง Image ใสสำหรับเรนเดอร์เฉพาะ Layer นี้
-                BufferedImage layerBuffer = new BufferedImage(
-                    BASE_WIDTH, BASE_HEIGHT, BufferedImage.TYPE_INT_ARGB
-                );
+                BufferedImage layerBuffer = new BufferedImage(BASE_WIDTH, BASE_HEIGHT, BufferedImage.TYPE_INT_ARGB);
                 Graphics2D gLayer = layerBuffer.createGraphics();
+            
+                //1.เปิดใช้งานระบบ Anti-Aliasing (ลบรอบหยัก)
+                //2.ควบคุม ตำแหน่งและพิกัดความหนาของเส้นวาดให้แม่นยำแบบย่อยจุด (Sub-pixel Precision)
+                //3.การเรนเดอร์ภาพโดยเน้นคุณภาพสูงสุด (Quality Over Speed)
                 gLayer.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                gLayer.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+                gLayer.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 
                 // หากมีรูปภาพพื้นหลังของ Layer
                 if (layer.getBackgroundImage() != null) {
+                    // ปิดการเกลี่ยสีซ้ำสำหรับภาพที่โหลดเข้ามา (ป้องกันภาพฟุ้งซ้ำซ้อน)
+                    gLayer.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+                
                     gLayer.drawImage(layer.getBackgroundImage(), 0, 0, null);
+            
+                    // คืนค่า Interpolation กลับเป็น Bicubic หรือ Bilinear สำหรับการวาด Shape ต่อไป
+                    gLayer.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
                 }
 
-                // วาด Shapes ทั้งหมดของ Layer นี้ (ยางลบจะลบเฉพาะ Pixel ใน layerBuffer นี้)
+                // วาด Shapes ทั้งหมดของ Layer นี้
                 for (DrawnShape shape : layer.getShapes()) {
-                    shape.draw(gLayer);
+                    shape.drawShape(gLayer);
                 }
 
-                // ถ้าเป็น Active Layer ที่กำลังลากยางลบอยู่ ให้วาด Preview ยางลบลงใน Layer นี้สดๆ
+                //เปลี่ยน Preview ยางลบขณะลากเมาส์ให้เป็นเส้นโค้ง smooth
                 if (layer == model.getActiveLayer() && startPoint != null && currentPoint != null) {
-                    if (model.getCurrentTool() == DrawnShape.ShapeType.ERASER) {
+                    if (model.getCurrentTool() == DrawnShape.ShapeType.ERASER && freehandPoints.size() > 1) {
                         gLayer.setComposite(AlphaComposite.Clear);
                         gLayer.setStroke(new BasicStroke(model.getEraserSize(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                        for (int i = 0; i < freehandPoints.size() - 1; i++) {
-                            Point p1 = freehandPoints.get(i);
-                            Point p2 = freehandPoints.get(i + 1);
-                            gLayer.drawLine(p1.x, p1.y, p2.x, p2.y);
-                        }
+    
+                        Path2D path = createSmoothPath(freehandPoints);
+                        gLayer.draw(path);
                     }
                 }
-
                 gLayer.dispose();
 
-                // 2. นำ Layer ที่วาดเสร็จแล้ว (ซึ่งมีส่วนโปร่งใสจากการลบ) มาแปะลงบนผืนกระดาษหลัก
+                //นำ Layer ที่วาดเสร็จแล้วมาแปะลงบนผืนกระดาษหลัก
                 g2d.drawImage(layerBuffer, 0, 0, null);
             }
         }
 
-        // 3. วาด Preview สำหรับเครื่องมืออื่นๆที่ไม่ใช่ยางลบ (เช่น ดินสอ, สี่เหลี่ยม, วงกลม)
+        //วาด Preview สำหรับเครื่องมืออื่นๆ (ดินสอ, สี่เหลี่ยม, วงกลม)
         if (startPoint != null && currentPoint != null && model.getCurrentTool() != DrawnShape.ShapeType.ERASER) {
-            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,model.getOpacity()));
 
+            //1.เปิดใช้งานระบบ Anti-Aliasing (ลบรอบหยัก)
+            //2.ควบคุม ตำแหน่งและพิกัดความหนาของเส้นวาดให้แม่นยำแบบย่อยจุด (Sub-pixel Precision)
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+
+            //ดึงค่า Opacity
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, model.getOpacity()));
+            //ดึงสี
             g2d.setColor(model.getCurrentColor());
+            //กำหนดลักษณะเส้น โดย CAP_ROUND ทำให้ สุดปลายโค้งมน และ JOIN_ROUND จุดเชื่อมต่อโค้งมน
             g2d.setStroke(new BasicStroke(model.getPencilSize(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
             DrawnShape.ShapeType tool = model.getCurrentTool();
             if (tool == DrawnShape.ShapeType.LINE) {
                 g2d.draw(new Line2D.Float(startPoint, currentPoint));
+
             } else if (tool == DrawnShape.ShapeType.RECTANGLE) {
                 g2d.draw(makeRectangle(startPoint, currentPoint));
+
             } else if (tool == DrawnShape.ShapeType.CIRCLE) {
                 g2d.draw(makeEllipse(startPoint, currentPoint));
+
             } else if (tool == DrawnShape.ShapeType.PENCIL && freehandPoints.size() > 1) {
-                Path2D path = new Path2D.Float();
-
-                path.moveTo(
-                freehandPoints.get(0).x,
-                freehandPoints.get(0).y
-    );
-
-    for (int i = 1; i < freehandPoints.size(); i++) {
-        path.lineTo(
-            freehandPoints.get(i).x,
-            freehandPoints.get(i).y
-        );
+                //เปลี่ยน Preview ดินสอให้เป็นเส้นโค้ง smooth เช่นกัน
+                Path2D path = createSmoothPath(freehandPoints);
+                g2d.draw(path);
+            }
+            
+        }
+    
+        // คืนค่า Composite กลับเสมอ
+        g2d.setComposite(AlphaComposite.SrcOver);
     }
 
-    g2d.draw(path);
+    
+    //ช่วยสร้าง Path2D แบบโค้งมนด้วย Quad Curve (Bézier)
+    private Path2D createSmoothPath(List<Point> pts) {
+        Path2D path = new Path2D.Float();
+        if (pts == null || pts.isEmpty()) return path;
+
+        path.moveTo(pts.get(0).x, pts.get(0).y);
+
+        if (pts.size() == 2) {
+            path.lineTo(pts.get(1).x, pts.get(1).y);
+        } else {
+            for (int i = 1; i < pts.size() - 1; i++) {
+                Point p1 = pts.get(i);
+                Point p2 = pts.get(i + 1);
+
+                double midX = (p1.x + p2.x) / 2.0;
+                double midY = (p1.y + p2.y) / 2.0;
+
+                path.quadTo(p1.x, p1.y, midX, midY);
             }
+        Point last = pts.get(pts.size() - 1);
+        path.lineTo(last.x, last.y);
         }
-        g2d.setComposite(AlphaComposite.SrcOver);
+        return path;
     }
 }
