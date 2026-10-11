@@ -18,7 +18,7 @@ public class ZoomPanel extends JPanel {
             double scale = zoomSlider.getValue() / 100.0;
             model.setZoomScale(scale);
             zoomLabel.setText(zoomSlider.getValue() + "%");
-            paintPanel.updateCanvasSize();//เพิ่มมา
+            paintPanel.updateCanvasSize();
             paintPanel.repaint();
         });
 

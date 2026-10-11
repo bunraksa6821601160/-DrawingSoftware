@@ -1,4 +1,5 @@
 import java.awt.*;
+import java.awt.event.ActionListener;
 import javax.swing.*;
 
 public class ToolsPanel extends JPanel {
@@ -11,9 +12,12 @@ public class ToolsPanel extends JPanel {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBorder(BorderFactory.createTitledBorder("Tools"));
 
-        // 1. ปุ่มเลือกเครื่องมือวาด
+        //ปุ่มเลือกเครื่องมือวาด
         JPanel toolsGrid = new JPanel(new GridLayout(3, 2, 4, 4));
 
+        //ล็อกขนาดคงที่ไว้ที่ $115 \times 140$ พิกเซลเสมอ แม้ผู้ใช้จะทำการขยายหรือย่อขนาดหน้าต่าง
+        //1.กำหนด ขนาดที่ต้องการ/เหมาะสมที่สุด (Preferred Size) ให้มีความกว้าง 115 พิกเซล และความสูง 140 พิกเซล
+        //2.กำหนด ขีดจำกัดขนาดสูงสุด (Maximum Size) ไม่ให้เกินกว้าง 115 และสูง 140 พิกเซล
         toolsGrid.setPreferredSize(new Dimension(115, 140));
         toolsGrid.setMaximumSize(new Dimension(115, 140));
 
@@ -24,21 +28,21 @@ public class ToolsPanel extends JPanel {
         JButton circleBtn = new JButton();
         JButton textBtn = new JButton();
 
-        //
+        //ทำให้ปุ่มเปิดปิดได้
         JButton[] toolButtons = { pencilBtn, eraserBtn, lineBtn,rectBtn, circleBtn, textBtn};
         for (JButton btn : toolButtons) {
             btn.addActionListener(e -> {
                 if (selectedButton != null) {
                     selectedButton.setBackground(null);
-        }
+                }
 
-        selectedButton = btn;
-        selectedButton.setBackground(Color.CYAN);
-    });
-    //เลือกดินสอตอนแรก
-    selectedButton = pencilBtn;
-    pencilBtn.setBackground(Color.CYAN);
-}
+                selectedButton = btn;
+                selectedButton.setBackground(Color.CYAN);
+            });
+            //เลือกดินสอตอนแรก
+            selectedButton = pencilBtn;
+            pencilBtn.setBackground(Color.CYAN);
+        }
         
 
         //รูปicon
@@ -74,16 +78,15 @@ public class ToolsPanel extends JPanel {
         add(toolsGrid);
         add(Box.createVerticalStrut(10));
 
+
         // ปรับขนาด + ความเข้ม
         JPanel settingPanel = new JPanel(new GridLayout(1, 2, 5, 0));
 
-        // Size
+        // SizePanel
         JPanel sizePanel = new JPanel(new BorderLayout());
         sizePanel.setBorder(BorderFactory.createTitledBorder("Size"));
 
-        JSlider sizeSlider = new JSlider(
-        JSlider.VERTICAL, 1, 50, (int) model.getPencilSize()
-);
+        JSlider sizeSlider = new JSlider(JSlider.VERTICAL, 1, 50, (int) model.getPencilSize());
 
         sizeSlider.setMajorTickSpacing(10);
         sizeSlider.setPaintTicks(true);
@@ -97,7 +100,7 @@ public class ToolsPanel extends JPanel {
             model.setPencilSize(size);
             model.setEraserSize(size);
             sizeLabel.setText(String.valueOf(size));
-});
+        });
 
         sizePanel.add(sizeSlider, BorderLayout.CENTER);
         sizePanel.add(sizeLabel, BorderLayout.SOUTH);
@@ -107,10 +110,11 @@ public class ToolsPanel extends JPanel {
         JPanel opacityPanel = new JPanel(new BorderLayout());
         opacityPanel.setBorder(BorderFactory.createTitledBorder("Opacity"));
 
-        JSlider opacitySlider = new JSlider(
-        JSlider.VERTICAL, 0, 100, 100
-);
+        JSlider opacitySlider = new JSlider(JSlider.VERTICAL, 0, 100, 100);
 
+        //1.กำหนด ระยะห่างของขีดวัดหลัก (Major Ticks) ให้เกิดขึ้นทุกๆ 10 หน่วย
+        //2.สั่งให้ วาด/แสดงขีดวัด (Ticks) บนตัวสไลเดอร์
+        //3.ซ่อนตัวเลขกำกับสเกล (Labels) ไม่ให้แสดงบนสไลเดอร์
         opacitySlider.setMajorTickSpacing(10);
         opacitySlider.setPaintTicks(true);
         opacitySlider.setPaintLabels(false);
@@ -119,10 +123,10 @@ public class ToolsPanel extends JPanel {
         opacityLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         opacitySlider.addChangeListener(e -> {
-        int value = opacitySlider.getValue();
-        model.setOpacity(value / 100.0f);
-        opacityLabel.setText(opacitySlider.getValue() + "%");
-});
+            int value = opacitySlider.getValue();
+            model.setOpacity(value / 100.0f);
+            opacityLabel.setText(opacitySlider.getValue() + "%");
+        });
 
         opacityPanel.add(opacitySlider, BorderLayout.CENTER);
         opacityPanel.add(opacityLabel, BorderLayout.SOUTH);
@@ -132,28 +136,38 @@ public class ToolsPanel extends JPanel {
         settingPanel.add(sizePanel);
         settingPanel.add(opacityPanel);
 
-add(settingPanel);
+        add(settingPanel);
 
         add(Box.createVerticalStrut(5));
-
-       
-
         add(Box.createVerticalStrut(10));
 
-        // // 4. ปุ่มเลือกสี
+
+        //ปุ่มเลือกสี
         JPanel colorPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton colorPickerBtn = new JButton("Color");
         colorPreviewBtn = new JButton("  ");
         colorPreviewBtn.setBackground(model.getCurrentColor());
-        colorPreviewBtn.setEnabled(false);
+        
+        // แล้วใช้คำสั่งพวกนี้ปรับแต่งปุ่มพรีวิวสีให้สวยงามแทน
+        //1.ปิดไม่ให้ปุ่มนี้สามารถ รับโฟกัส (Focus) จากคีย์บอร์ด ช่วยไม่ให้ปุ่มไปแย่งโฟกัสจากคอมโพเนนต์อื่น
+        //2.กำหนดให้ปุ่มมี ความทึบแสง (Non-transparent)
+        //3.วาดเส้นขอบ (Border) รอบตัวปุ่ม
+        colorPreviewBtn.setFocusable(false);
+        colorPreviewBtn.setOpaque(true);
+        colorPreviewBtn.setBorderPainted(true); // แสดงขอบปุ่มให้ดูเป็นช่องสี
 
-        colorPickerBtn.addActionListener(e -> {
-            Color chosen = JColorChooser.showDialog(this, "เลือกสีแปรงวาด", model.getCurrentColor());
+        // สร้าง Listener กลางสำหรับเปิด JColorChooser เพื่อลดโค้ดซ้ำซ้อน
+        ActionListener chooseColorAction = e -> {
+            Color chosen = JColorChooser.showDialog(this, "Select a brush color.", model.getCurrentColor());
             if (chosen != null) {
                 model.setCurrentColor(chosen);
                 colorPreviewBtn.setBackground(chosen);
             }
-        });
+        };
+
+        // ผูก Listener ให้ทั้ง 2 ปุ่มทำงานเหมือนกัน
+        colorPickerBtn.addActionListener(chooseColorAction);
+        colorPreviewBtn.addActionListener(chooseColorAction);
 
         colorPanel.add(colorPickerBtn);
         colorPanel.add(colorPreviewBtn);
@@ -161,11 +175,18 @@ add(settingPanel);
 
     }
     
+    /**
+     * ปรับขนาดภาพเพื่อไปใส่ในปุ่ม
+     * @param path
+     * @param width
+     * @param height
+     * @return ภาพ icon สำหรับ Tool ต่างๆ
+     */
     private ImageIcon resizeIcon(String path, int width, int height) {
-    ImageIcon icon = new ImageIcon(path);
-    Image image = icon.getImage().getScaledInstance(
-        width, height, Image.SCALE_SMOOTH
-    );
-    return new ImageIcon(image);
-}
+        ImageIcon icon = new ImageIcon(path);
+        Image image = icon.getImage().getScaledInstance(
+            width, height, Image.SCALE_SMOOTH
+        );
+        return new ImageIcon(image);
+    }
 }
