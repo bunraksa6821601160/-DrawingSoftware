@@ -19,6 +19,7 @@ public class DrawingModel {
     private double zoomScale = 1.0; 
     private boolean globalVisibility = true; // ปุ่ม On/Off รวมทุกเลเยอร์
     private boolean isModified = false;
+    private boolean backgroundEnabled = true;// true = มีพื้นหลังสีขาว, false = โปร่งใส
 
     private Stack<List<Layer>> undoStack = new Stack<>();
     private Stack<List<Layer>> redoStack = new Stack<>();
@@ -161,4 +162,12 @@ public class DrawingModel {
     public void setOpacity(float opacity) {
         this.opacity = opacity;
     }
+
+    public boolean isBackgroundEnabled() {
+    return backgroundEnabled;
+}
+
+    public void setBackgroundEnabled(boolean enabled) {
+    this.backgroundEnabled = enabled;
+}
 }

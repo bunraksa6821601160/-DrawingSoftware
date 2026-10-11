@@ -161,7 +161,7 @@ public class PaintPanel extends JPanel {
                     DrawnShape shape = new DrawnShape(DrawnShape.ShapeType.CIRCLE,makeEllipse(startPoint, currentPoint), model.getCurrentColor(), model.getPencilSize());
                     shape.setOpacity(model.getOpacity());
                     activeLayer.addShape(shape);
-                }
+                } 
 
                 freehandPoints.clear(); //ปล่อยปุ่มแปลว่าวาดเสร็จแล้วลบจุดเก่าทิ้ง
                 startPoint = null;
@@ -193,6 +193,23 @@ public class PaintPanel extends JPanel {
     private Rectangle2D.Float makeRectangle(Point p1, Point p2) {
         return new Rectangle2D.Float(Math.min(p1.x, p2.x), Math.min(p1.y, p2.y), Math.abs(p1.x - p2.x), Math.abs(p1.y - p2.y));
     }
+
+//     private Path2D.Float makeTriangle(Point p1, Point p2) {
+//     Path2D.Float triangle = new Path2D.Float();
+
+//     float left = Math.min(p1.x, p2.x);
+//     float right = Math.max(p1.x, p2.x);
+//     float top = Math.min(p1.y, p2.y);
+//     float bottom = Math.max(p1.y, p2.y);
+
+//     triangle.moveTo((left + right) / 2f, top);
+//     triangle.lineTo(left, bottom);
+//     triangle.lineTo(right, bottom);
+//     triangle.closePath();
+
+//     return triangle;
+// }
+    
 
     private Ellipse2D.Float makeEllipse(Point p1, Point p2) {
         return new Ellipse2D.Float(Math.min(p1.x, p2.x), Math.min(p1.y, p2.y), Math.abs(p1.x - p2.x), Math.abs(p1.y - p2.y));
@@ -239,29 +256,36 @@ public class PaintPanel extends JPanel {
         g2d.clipRect(0, 0, BASE_WIDTH, BASE_HEIGHT);
 ;
         
-        // วาดกระดาษแบบตารางโปร่งใส (Checkerboard)
-        int tileSize = 50; // ขนาดของช่องตาราง
-        Color color1 = Color.WHITE; // สีขาว
-        Color color2 = new Color(220, 220, 220); // สีเทาอ่อน (ให้ตัดกับขาวและเด่นกว่าพื้นหลัง)
+        
+        // วาดพื้นหลังของกระดาษ
+        if (model.isBackgroundEnabled()) {
+            // มีพื้นหลังสีขาว
+            g2d.setColor(Color.WHITE);
+            g2d.fillRect(0, 0, BASE_WIDTH, BASE_HEIGHT);
 
-        //วาดตาราง
-        for (int y = 0; y < BASE_HEIGHT; y += tileSize) {
-            for (int x = 0; x < BASE_WIDTH; x += tileSize) {
-                // คำนวณช่วงกว้าง/ยาว ของช่องสุดท้ายไม่ให้เกินขอบ BASE_WIDTH/BASE_HEIGHT
-                int w = Math.min(tileSize, BASE_WIDTH - x);
-                int h = Math.min(tileSize, BASE_HEIGHT - y);
+        } else {
+            // ไม่มีพื้นหลัง: แสดงตารางหมากรุก
+            int tileSize = 50;
+            Color color1 = Color.WHITE;
+            Color color2 = new Color(220, 220, 220);
 
-                // สลับสีตารางแบบหมากรุก
-                if ((x / tileSize + y / tileSize) % 2 == 0) {
-                    g2d.setColor(color1);
-                } else {
-                    g2d.setColor(color2);
+            for (int y = 0; y < BASE_HEIGHT; y += tileSize) {
+                for (int x = 0; x < BASE_WIDTH; x += tileSize) {
+                    int w = Math.min(tileSize, BASE_WIDTH - x);
+                    int h = Math.min(tileSize, BASE_HEIGHT - y);
+
+                    if ((x / tileSize + y / tileSize) % 2 == 0) {
+                        g2d.setColor(color1);
+                    } else {
+                        g2d.setColor(color2);
+                    }
+
+                    g2d.fillRect(x, y, w, h);
                 }
-                g2d.fillRect(x, y, w, h);
             }
         }
 
-        //วาดทุกเลเยอร์
+        // วาดทุกเลเยอร์
         drawLayersAndPreview(g2d);
         
         //ปิดใช้ g2d เพื่อคืนทรัพยากรในระบบ

@@ -8,7 +8,7 @@ import java.util.List;
  * DrawnShape
  */
 public class DrawnShape{
-    public enum ShapeType { PENCIL, ERASER, LINE, RECTANGLE, CIRCLE, TEXT } // ประเภทของเครื่องมือ
+    public enum ShapeType { PENCIL, ERASER, LINE, RECTANGLE, CIRCLE, TEXT  } // ประเภทของเครื่องมือ
 
     private ShapeType type; // บอกว่าวัตถุชิ้นนี้สร้างจากอะไร เพื่อจะเรียกใช้ได้ถูก
     private Shape shape; //เก็บรูปร่าง

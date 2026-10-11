@@ -43,6 +43,25 @@ public class MenuPanel extends JPanel {
         fileMenu.add(saveItem);
         fileMenu.add(saveAsItem);
 
+
+        //Background
+        JMenu backgroundMenu = new JMenu("View");
+        JMenuItem backgroundItem = new JMenuItem("Background: On");
+  
+        //-----------------ActionListioner--------------------------
+        backgroundItem.addActionListener(e -> { boolean enabled = model.isBackgroundEnabled();
+        model.setBackgroundEnabled(!enabled);
+    if (enabled) {
+        backgroundItem.setText("Background: Off");
+    } else {
+        backgroundItem.setText("Background: On");
+    }
+
+    paintPanel.repaint();
+});
+    backgroundMenu.add(backgroundItem);
+    
+
         //Help Menu
         JMenu helpMenu = new JMenu("Help");
         JMenuItem aboutItem = new JMenuItem("About");
@@ -64,9 +83,10 @@ public class MenuPanel extends JPanel {
         helpMenu.add(howToItem);
 
         menuBar.add(fileMenu);
+        menuBar.add(backgroundMenu);
         menuBar.add(helpMenu);
 
-        add(menuBar);
+        add(menuBar);    
 
         //ปุ่ม Undo / Redo บน MenuPanel
         JButton undoBtn = new JButton("Undo (Ctrl+Z)");
@@ -218,7 +238,11 @@ public class MenuPanel extends JPanel {
         g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
         g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 
-        paintPanel.drawLayersAndPreview(g2d);
+        if (model.isBackgroundEnabled()) {
+    g2d.setColor(Color.WHITE);
+    g2d.fillRect(0, 0, width, height);
+}
+    paintPanel.drawLayersAndPreview(g2d);
         g2d.dispose();
 
         ImageIO.write(image, "PNG", currentSaveFile); //save รูป
